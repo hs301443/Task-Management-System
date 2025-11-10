@@ -60,11 +60,9 @@ export const updatePayment = async (req: Request, res: Response) => {
   const payment = await PaymentModel.findById(id).populate("plan_id");
   if (!payment) throw new NotFound("Payment not found");
 
-  // ✅ تحديث الحالة
-  payment.status = status;
-
   // 🟥 لو مرفوض
   if (status === "rejected") {
+    payment.status = "rejected";
     payment.rejected_reason = rejected_reason || "No reason provided";
     await payment.save();
     return SuccessResponse(res, { message: "Payment rejected", payment });
@@ -75,9 +73,12 @@ export const updatePayment = async (req: Request, res: Response) => {
   const user = await User.findById(payment.userId);
   if (!user) throw new NotFound("User not found");
 
+  // ✅ تحويل role للـ user إلى admin
+  user.role = "admin";
+  await user.save();
+
   // ✅ التحقق من كود الخصم (Coupon)
   let finalPrice = payment.amount; // افتراضي
-
   if (payment.code) {
     const coupon = await CouponModel.findOne({
       code: payment.code,
@@ -87,25 +88,21 @@ export const updatePayment = async (req: Request, res: Response) => {
     });
 
     if (coupon) {
-      // حساب الخصم
       if (coupon.discount_type === "percentage") {
         const discountAmount = (payment.amount * coupon.discount_value) / 100;
         finalPrice = payment.amount - discountAmount;
       } else if (coupon.discount_type === "amount") {
         finalPrice = payment.amount - coupon.discount_value;
       }
-
-      // تأكد إن السعر النهائي مش أقل من صفر
       if (finalPrice < 0) finalPrice = 0;
     }
   }
 
-  // ✅ احفظ السعر النهائي (مع التأكد من وجود الحقل في الـ Schema)
   (payment as any).final_price = finalPrice;
 
   // ✅ حساب مدة الاشتراك
   let monthsToAdd = 0;
-  const subscriptionType = payment.subscriptionType || "quarterly"; // افتراضي quarterly
+  const subscriptionType = payment.subscriptionType || "monthly";
   switch (subscriptionType) {
     case "monthly":
       monthsToAdd = 1;
@@ -174,6 +171,8 @@ export const updatePayment = async (req: Request, res: Response) => {
     await user.save();
   }
 
+  payment.status = "approved";
   await payment.save();
-  SuccessResponse(res, { message: "Payment approved successfully", payment });
+
+  SuccessResponse(res, { message: "Payment approved successfully and user is now admin", payment });
 };

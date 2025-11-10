@@ -2,4 +2,112 @@ import { SuccessResponse } from "../../utils/response";
 import { Request, Response } from "express";
 import { BadRequest } from "../../Errors/BadRequest";
 import { NotFound } from "../../Errors/NotFound";
-import { CouponModel } from "../../models/schema/Coupon";
+import { ProjectModel } from "../../models/schema/project";
+import { SubscriptionModel } from "../../models/schema/subscriptions";
+
+
+export const createProject = async (req: Request, res: Response) => {
+ if (!req.user) {
+    throw new BadRequest("User information is missing in the request");
+  }
+   const userId = req.user._id; // أو حسب طريقة استخراج اليوزر عندك من التوكن
+  const { name, description } = req.body;
+
+  // 1️⃣ التحقق من البيانات الأساسية
+  if (!name) {
+    throw new BadRequest("Project name is required");
+  }
+
+  // 2️⃣ جلب الاشتراك الخاص بالمستخدم
+  const subscription = await SubscriptionModel.findOne({ userId }).populate("planId");
+  if (!subscription) {
+    throw new BadRequest("You do not have an active subscription");
+  }
+
+  // 3️⃣ التأكد من حالة الاشتراك
+  if (subscription.status !== "active") {
+    throw new BadRequest("Your subscription is not active");
+  }
+
+  // 4️⃣ التأكد أن الاشتراك لم ينتهِ
+  const now = new Date();
+  if (subscription.endDate < now) {
+    subscription.status = "expired";
+    await subscription.save();
+    throw new BadRequest("Your subscription has expired");
+  }
+
+  // 5️⃣ التأكد من عدد المشاريع المسموح بها
+  const plan = subscription.planId as any;
+  const currentProjectsCount = await ProjectModel.countDocuments({ userId });
+
+  if (currentProjectsCount >= plan.projects_limit) {
+    throw new BadRequest("You have reached your project limit for this plan");
+  }
+
+  // 6️⃣ إنشاء المشروع الجديد
+  const newProject = new ProjectModel({
+    name,
+    description,
+    userId,
+  });
+
+  await newProject.save();
+
+  // 7️⃣ تحديث عدد المشاريع في الاشتراك
+  subscription.websites_created_count += 1;
+  subscription.websites_remaining_count = plan.projects_limit - (subscription.websites_created_count);
+  await subscription.save();
+
+  // 8️⃣ الإرجاع الناجح
+  return SuccessResponse(res, {
+    message: "Project created successfully",
+    project: newProject,
+  });
+};
+
+export const getAllProjects = async (req: Request, res: Response) => {
+    const projects = await ProjectModel.find();
+    return SuccessResponse(res, {message: "Projects fetched successfully", projects });
+}
+export const getProjectById = async (req: Request, res: Response) => {
+    const { id } = req.params;
+   if (!id) {
+        throw new BadRequest("Project ID is required");
+    }
+    const project = await ProjectModel.findById(id);
+    if (!project) {
+        throw new NotFound("Project not found");
+    }
+    return SuccessResponse(res, { message: "Project fetched successfully", project });
+}
+
+export const deleteProjectById = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    if (!id) {
+        throw new BadRequest("Project ID is required");
+    }
+    const project = await ProjectModel.findById(id);
+    if (!project) {
+        throw new NotFound("Project not found");
+    }
+    await ProjectModel.findByIdAndDelete(id);
+    return SuccessResponse(res, { message: "Project deleted successfully" });
+}
+
+export const updateProjectById = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { name, description } = req.body;
+    if (!id) {
+        throw new BadRequest("Project ID is required");
+    }
+    const project = await ProjectModel.findById(id);
+    if (!project) {
+        throw new NotFound("Project not found");
+    }
+    project.name = name || project.name;
+    project.description = description || project.description;
+    await project.save();
+    return SuccessResponse(res, { message: "Project updated successfully", project });
+}
+

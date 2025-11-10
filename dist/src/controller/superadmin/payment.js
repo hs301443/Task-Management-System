@@ -53,10 +53,9 @@ const updatePayment = async (req, res) => {
     const payment = await payment_1.PaymentModel.findById(id).populate("plan_id");
     if (!payment)
         throw new NotFound_1.NotFound("Payment not found");
-    // ✅ تحديث الحالة
-    payment.status = status;
     // 🟥 لو مرفوض
     if (status === "rejected") {
+        payment.status = "rejected";
         payment.rejected_reason = rejected_reason || "No reason provided";
         await payment.save();
         return (0, response_1.SuccessResponse)(res, { message: "Payment rejected", payment });
@@ -66,6 +65,9 @@ const updatePayment = async (req, res) => {
     const user = await User_1.User.findById(payment.userId);
     if (!user)
         throw new NotFound_1.NotFound("User not found");
+    // ✅ تحويل role للـ user إلى admin
+    user.role = "admin";
+    await user.save();
     // ✅ التحقق من كود الخصم (Coupon)
     let finalPrice = payment.amount; // افتراضي
     if (payment.code) {
@@ -76,7 +78,6 @@ const updatePayment = async (req, res) => {
             end_date: { $gte: new Date() },
         });
         if (coupon) {
-            // حساب الخصم
             if (coupon.discount_type === "percentage") {
                 const discountAmount = (payment.amount * coupon.discount_value) / 100;
                 finalPrice = payment.amount - discountAmount;
@@ -84,16 +85,14 @@ const updatePayment = async (req, res) => {
             else if (coupon.discount_type === "amount") {
                 finalPrice = payment.amount - coupon.discount_value;
             }
-            // تأكد إن السعر النهائي مش أقل من صفر
             if (finalPrice < 0)
                 finalPrice = 0;
         }
     }
-    // ✅ احفظ السعر النهائي (مع التأكد من وجود الحقل في الـ Schema)
     payment.final_price = finalPrice;
     // ✅ حساب مدة الاشتراك
     let monthsToAdd = 0;
-    const subscriptionType = payment.subscriptionType || "quarterly"; // افتراضي quarterly
+    const subscriptionType = payment.subscriptionType || "monthly";
     switch (subscriptionType) {
         case "monthly":
             monthsToAdd = 1;
@@ -152,7 +151,8 @@ const updatePayment = async (req, res) => {
         user.planId = plan._id;
         await user.save();
     }
+    payment.status = "approved";
     await payment.save();
-    (0, response_1.SuccessResponse)(res, { message: "Payment approved successfully", payment });
+    (0, response_1.SuccessResponse)(res, { message: "Payment approved successfully and user is now admin", payment });
 };
 exports.updatePayment = updatePayment;
