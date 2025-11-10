@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 import { Request, Response } from "express";
 import { PlanModel } from "../../models/schema/plans";
@@ -9,16 +8,17 @@ import { UnauthorizedError } from "../../Errors/unauthorizedError";
 import { SuccessResponse } from "../../utils/response";
 import { CouponModel } from "../../models/schema/Coupon";
 import { CouponUserModel } from "../../models/schema/CouponUser";
-
+import { saveBase64Image } from "../../utils/handleImages";
 
 export const createPayment = async (req: Request, res: Response) => {
   if (!req.user) throw new UnauthorizedError("User is not authenticated");
 
   const userId = req.user.id;
-  const { plan_id, paymentmethod_id, amount, code, subscriptionType } = req.body;
+  const { plan_id, paymentmethod_id, amount, code, subscriptionType, photo } = req.body;
 
-  if (!amount || !paymentmethod_id || !plan_id) {
-    throw new BadRequest("Please provide all the required fields");
+  // ✅ التحقق من كل الحقول المطلوبة
+  if (!amount || !paymentmethod_id || !plan_id || !photo) {
+    throw new BadRequest("Please provide all the required fields, including photo");
   }
 
   if (!mongoose.Types.ObjectId.isValid(plan_id)) throw new BadRequest("Invalid plan ID");
@@ -32,14 +32,12 @@ export const createPayment = async (req: Request, res: Response) => {
     throw new BadRequest("Amount must be a positive number");
   }
 
-  const validAmounts = [plan.price_monthly, plan.price_annually]
-    .filter(price => price != null);
-
+  const validAmounts = [plan.price_monthly, plan.price_annually].filter(p => p != null);
   if (!validAmounts.includes(parsedAmount)) {
     throw new BadRequest("Invalid payment amount for this plan");
   }
 
-  // حساب الخصم لو فيه كود
+  // ===== حساب الخصم لو فيه كوبون =====
   let discountAmount = 0;
   if (code) {
     const today = new Date();
@@ -49,45 +47,38 @@ export const createPayment = async (req: Request, res: Response) => {
       start_date: { $lte: today },
       end_date: { $gte: today },
     });
-
     if (!promo) throw new BadRequest("Invalid or expired promo code");
 
     const alreadyUsed = await CouponUserModel.findOne({ userId, codeId: promo._id });
     if (alreadyUsed) throw new BadRequest("You have already used this promo code");
 
-    type SubscriptionType = "monthly" | "yearly";
-    const validSubscriptionTypes: SubscriptionType[] = ["monthly", "yearly"];
-    if (!validSubscriptionTypes.includes(subscriptionType)) {
+    if (!["monthly", "yearly"].includes(subscriptionType)) {
       throw new BadRequest("Invalid subscription type");
     }
 
-    if (promo.discount_type === "percentage") {
-      discountAmount = (amount * promo.discount_value) / 100;
-    } else {
-      discountAmount = promo.discount_value;
-    }
+    discountAmount = promo.discount_type === "percentage"
+      ? (parsedAmount * promo.discount_value) / 100
+      : promo.discount_value;
 
     await CouponUserModel.create({ userId, codeId: promo._id });
   }
 
-  const finalAmount = amount - discountAmount;
+  const finalAmount = parsedAmount - discountAmount;
   if (finalAmount <= 0) throw new BadRequest("Invalid payment amount after applying promo code");
 
-  // بناء رابط كامل للصورة لو مرفوعة
-  let photoUrl: string | undefined;
-  if (req.file) {
-    photoUrl = `${req.protocol}://${req.get("host")}/uploads/payments/${req.file.filename}`;
-  }
-
+  // ===== حفظ الصورة Base64 =====
+  // TypeScript يعرف الآن أن photo موجود
+const photoUrl = await saveBase64Image(photo, userId !== undefined ? userId : '', req, "payments");
+  // ===== إنشاء الدفع =====
   const payment = await PaymentModel.create({
     amount: finalAmount,
     paymentmethod_id,
     plan_id,
     payment_date: new Date(),
-    userId,
+    userId: userId, // مؤكد موجود
     status: "pending",
     code,
-    photo: photoUrl, // رابط كامل للصورة
+    photo: photoUrl,
     subscriptionType,
   });
 

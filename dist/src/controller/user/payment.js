@@ -13,13 +13,15 @@ const unauthorizedError_1 = require("../../Errors/unauthorizedError");
 const response_1 = require("../../utils/response");
 const Coupon_1 = require("../../models/schema/Coupon");
 const CouponUser_1 = require("../../models/schema/CouponUser");
+const handleImages_1 = require("../../utils/handleImages");
 const createPayment = async (req, res) => {
     if (!req.user)
         throw new unauthorizedError_1.UnauthorizedError("User is not authenticated");
     const userId = req.user.id;
-    const { plan_id, paymentmethod_id, amount, code, subscriptionType } = req.body;
-    if (!amount || !paymentmethod_id || !plan_id) {
-        throw new BadRequest_1.BadRequest("Please provide all the required fields");
+    const { plan_id, paymentmethod_id, amount, code, subscriptionType, photo } = req.body;
+    // ✅ التحقق من كل الحقول المطلوبة
+    if (!amount || !paymentmethod_id || !plan_id || !photo) {
+        throw new BadRequest_1.BadRequest("Please provide all the required fields, including photo");
     }
     if (!mongoose_1.default.Types.ObjectId.isValid(plan_id))
         throw new BadRequest_1.BadRequest("Invalid plan ID");
@@ -32,12 +34,11 @@ const createPayment = async (req, res) => {
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
         throw new BadRequest_1.BadRequest("Amount must be a positive number");
     }
-    const validAmounts = [plan.price_monthly, plan.price_annually]
-        .filter(price => price != null);
+    const validAmounts = [plan.price_monthly, plan.price_annually].filter(p => p != null);
     if (!validAmounts.includes(parsedAmount)) {
         throw new BadRequest_1.BadRequest("Invalid payment amount for this plan");
     }
-    // حساب الخصم لو فيه كود
+    // ===== حساب الخصم لو فيه كوبون =====
     let discountAmount = 0;
     if (code) {
         const today = new Date();
@@ -52,35 +53,30 @@ const createPayment = async (req, res) => {
         const alreadyUsed = await CouponUser_1.CouponUserModel.findOne({ userId, codeId: promo._id });
         if (alreadyUsed)
             throw new BadRequest_1.BadRequest("You have already used this promo code");
-        const validSubscriptionTypes = ["monthly", "yearly"];
-        if (!validSubscriptionTypes.includes(subscriptionType)) {
+        if (!["monthly", "yearly"].includes(subscriptionType)) {
             throw new BadRequest_1.BadRequest("Invalid subscription type");
         }
-        if (promo.discount_type === "percentage") {
-            discountAmount = (amount * promo.discount_value) / 100;
-        }
-        else {
-            discountAmount = promo.discount_value;
-        }
+        discountAmount = promo.discount_type === "percentage"
+            ? (parsedAmount * promo.discount_value) / 100
+            : promo.discount_value;
         await CouponUser_1.CouponUserModel.create({ userId, codeId: promo._id });
     }
-    const finalAmount = amount - discountAmount;
+    const finalAmount = parsedAmount - discountAmount;
     if (finalAmount <= 0)
         throw new BadRequest_1.BadRequest("Invalid payment amount after applying promo code");
-    // بناء رابط كامل للصورة لو مرفوعة
-    let photoUrl;
-    if (req.file) {
-        photoUrl = `${req.protocol}://${req.get("host")}/uploads/payments/${req.file.filename}`;
-    }
+    // ===== حفظ الصورة Base64 =====
+    // TypeScript يعرف الآن أن photo موجود
+    const photoUrl = await (0, handleImages_1.saveBase64Image)(photo, userId !== undefined ? userId : '', req, "payments");
+    // ===== إنشاء الدفع =====
     const payment = await payment_1.PaymentModel.create({
         amount: finalAmount,
         paymentmethod_id,
         plan_id,
         payment_date: new Date(),
-        userId,
+        userId: userId, // مؤكد موجود
         status: "pending",
         code,
-        photo: photoUrl, // رابط كامل للصورة
+        photo: photoUrl,
         subscriptionType,
     });
     (0, response_1.SuccessResponse)(res, {

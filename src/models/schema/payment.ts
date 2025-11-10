@@ -22,7 +22,7 @@ const paymentSchema = new mongoose.Schema({
   subscriptionType: {
     type: String,
     enum: ["monthly", "annually"],
-    default: "quarterly"
+    default: "monthly"
   },
 
   photo: { type: String, required: true },

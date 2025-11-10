@@ -3,15 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updatePayment = exports.getPaymentByIdAdmin = exports.getAllPaymentsAdmin = void 0;
 const BadRequest_1 = require("../../Errors/BadRequest");
 const NotFound_1 = require("../../Errors/NotFound");
-const unauthorizedError_1 = require("../../Errors/unauthorizedError");
 const response_1 = require("../../utils/response");
 const subscriptions_1 = require("../../models/schema/subscriptions");
 const payment_1 = require("../../models/schema/payment");
 const User_1 = require("../../models/schema/auth/User");
 const Coupon_1 = require("../../models/schema/Coupon");
 const getAllPaymentsAdmin = async (req, res) => {
-    if (!req.user || req.user.role !== "admin")
-        throw new unauthorizedError_1.UnauthorizedError("Access denied");
     const payments = await payment_1.PaymentModel.find()
         .populate("userId", "name email") // هات اسم و ايميل اليوزر بس
         .populate("plan_id") // هات تفاصيل البلان
@@ -28,8 +25,6 @@ const getAllPaymentsAdmin = async (req, res) => {
 };
 exports.getAllPaymentsAdmin = getAllPaymentsAdmin;
 const getPaymentByIdAdmin = async (req, res) => {
-    if (!req.user || req.user.role !== "admin")
-        throw new unauthorizedError_1.UnauthorizedError("Access denied");
     const { id } = req.params;
     if (!id)
         throw new BadRequest_1.BadRequest("Please provide payment id");

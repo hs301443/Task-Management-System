@@ -1,13 +1,14 @@
  import { Router } from "express";
 import authRouter from "../user/auth/index";
-import paymentMethodRouter from "../superadmin/payment_method";
 import paymentRouter  from "./payment";
+import paymentMethodRouter from "./payment_method";
+import plansRouter from "./plans";
 import { authenticated } from "../../middlewares/authenticated";
 import { authorizeRoles } from "../../middlewares/authorized";
  const route = Router();
 route.use("/auth", authRouter);
-route.use(authenticated, authorizeRoles('User'));
+route.use(authenticated, authorizeRoles('user','admin'));
 route.use("/payment-methods", paymentMethodRouter);
 route.use("/payments", paymentRouter);
-
+route.use("/plans", plansRouter);
  export default route;

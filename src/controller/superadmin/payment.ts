@@ -10,7 +10,6 @@ import { User } from '../../models/schema/auth/User';
 import { CouponModel } from '../../models/schema/Coupon';
 
 export const getAllPaymentsAdmin = async (req: Request, res: Response) => {
-  if (!req.user || req.user.role !== "admin") throw new UnauthorizedError("Access denied");
 
   const payments = await PaymentModel.find()
     .populate("userId", "name email") // هات اسم و ايميل اليوزر بس
@@ -30,7 +29,6 @@ export const getAllPaymentsAdmin = async (req: Request, res: Response) => {
 };
 
 export const getPaymentByIdAdmin = async (req: Request, res: Response) => {
-  if (!req.user || req.user.role !== "admin") throw new UnauthorizedError("Access denied");
 
   const { id } = req.params;
   if (!id) throw new BadRequest("Please provide payment id");
