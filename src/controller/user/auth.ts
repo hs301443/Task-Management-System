@@ -111,7 +111,13 @@ export const login = async (req: Request, res: Response) => {
 
   if (!user.isVerified) throw new ForbiddenError("Verify your email first");
 
-  const token = generateToken({ id: user._id.toString(), name: user.name });
+ const token = generateToken({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role, // ✅ مهم جدًا
+    isVerified: true,
+  });
   return SuccessResponse(res, { message: "Login successful", token, userId: user._id, role: user.role, name: user.name }, 200);
 };
 

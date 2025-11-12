@@ -12,7 +12,7 @@ const generateToken = (user) => {
     return jsonwebtoken_1.default.sign({
         id: user._id?.toString() || user.id?.toString(),
         name: user.name,
-        role: user.role || "user",
+        role: user.role,
         email: user.email,
         isVerified: user.isVerified ?? true,
     }, process.env.JWT_SECRET, { expiresIn: "7d" });

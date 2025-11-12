@@ -3,18 +3,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TaskModel = void 0;
 const mongoose_1 = require("mongoose");
 const taskSchema = new mongoose_1.Schema({
-    title: { type: String, required: true },
+    name: { type: String, required: true },
     description: { type: String },
-    project: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Project', required: true },
-    assignedTo: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }],
-    createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    project_id: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Project', required: true },
+    end_date: { type: Date },
     priority: { type: String, enum: ['low', 'medium', 'high'] },
     status: {
         type: String,
-        enum: ['todo', 'in_progress', 'done', 'blocked'],
-        default: 'todo',
+        enum: ['Pending', 'in_progress', 'done', 'Approved', 'rejected'],
+        default: 'Pending',
     },
-    dueDate: { type: Date },
-    attachments: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Attachment' }],
+    recorde: { type: String },
+    file: { type: String },
 }, { timestamps: true });
 exports.TaskModel = (0, mongoose_1.model)('Task', taskSchema);

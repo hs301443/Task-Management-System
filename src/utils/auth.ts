@@ -8,7 +8,7 @@ interface AuthPayload {
   _id?: string;
   id?: string;
   name: string;
-  role?: string;
+  role?: "user" | "admin" | "SuperAdmin" | string;
   email?: string;
   isVerified?: boolean;
 }
@@ -18,7 +18,7 @@ export const generateToken = (user: AuthPayload): string => {
     {
       id: user._id?.toString() || user.id?.toString(),
       name: user.name,
-      role: user.role || "user",
+      role: user.role ,
       email: user.email,
       isVerified: user.isVerified ?? true,
     },

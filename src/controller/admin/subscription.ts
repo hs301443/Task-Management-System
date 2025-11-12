@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { SubscriptionModel } from '../../models/schema/subscriptions';
 import { BadRequest } from '../../Errors/BadRequest';
 import { NotFound } from '../../Errors/NotFound';
@@ -6,18 +7,23 @@ import { UnauthorizedError } from '../../Errors/unauthorizedError';
 import { SuccessResponse } from '../../utils/response';
 
 export const getSubscription = async (req: Request, res: Response) => {
-  const user = req.user; 
+  const user = req.user;
 
   if (!user) throw new UnauthorizedError('Unauthorized');
 
-  const data = await SubscriptionModel.find({ userId: user._id })
+  // تأكد من أن الـ id بيتحول لـ ObjectId
+  const userId = new mongoose.Types.ObjectId(user.id);
+
+  const data = await SubscriptionModel.find({ userId })
     .populate({ path: 'userId', select: '-password' })
     .populate('planId')
     .populate('PaymentId')
     .lean();
 
-
-  SuccessResponse(res, { message: 'Your subscriptions fetched successfully', data });
+  SuccessResponse(res, {
+    message: 'Your subscriptions fetched successfully',
+    data,
+  });
 };
 
 export const getSubscriptionId = async (req: Request, res: Response) => {
@@ -27,7 +33,9 @@ export const getSubscriptionId = async (req: Request, res: Response) => {
   const { id } = req.params;
   if (!id) throw new BadRequest('Please provide subscription id');
 
-  const data = await SubscriptionModel.findOne({ _id: id, userId: user._id }) 
+  const userId = new mongoose.Types.ObjectId(user.id);
+
+  const data = await SubscriptionModel.findOne({ _id: id, userId })
     .populate({ path: 'userId', select: '-password' })
     .populate('planId')
     .populate('PaymentId')
@@ -35,5 +43,8 @@ export const getSubscriptionId = async (req: Request, res: Response) => {
 
   if (!data) throw new NotFound('Subscription not found for this user');
 
-  SuccessResponse(res, { message: 'Subscription fetched successfully', data });
+  SuccessResponse(res, {
+    message: 'Subscription fetched successfully',
+    data,
+  });
 };

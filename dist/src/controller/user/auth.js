@@ -85,7 +85,13 @@ const login = async (req, res) => {
         throw new Errors_1.UnauthorizedError("Invalid email or password");
     if (!user.isVerified)
         throw new Errors_1.ForbiddenError("Verify your email first");
-    const token = (0, auth_1.generateToken)({ id: user._id.toString(), name: user.name });
+    const token = (0, auth_1.generateToken)({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role, // ✅ مهم جدًا
+        isVerified: true,
+    });
     return (0, response_1.SuccessResponse)(res, { message: "Login successful", token, userId: user._id, role: user.role, name: user.name }, 200);
 };
 exports.login = login;

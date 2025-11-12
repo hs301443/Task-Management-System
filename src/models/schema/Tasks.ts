@@ -2,37 +2,35 @@ import { Schema, model, Document, Types } from 'mongoose';
 import { IUser } from './auth/User';
 import { IProject } from './project';
 
-export type TaskStatus = 'todo' | 'in_progress' | 'done' | 'blocked';
+export type TaskStatus = 'Pending' | 'in_progress' | 'done' | 'Approved' | 'rejected';
 
 export interface ITask extends Document {
-  title: string;
+  name: string;
   description?: string;
-  project: Types.ObjectId | IProject;
-  assignedTo: Types.ObjectId[] | IUser[];
-  createdBy: Types.ObjectId | IUser;
-  priority?: string 
+  project_id: Types.ObjectId | IProject;
+  end_date?: Date;
+  priority?: 'low' | 'medium' | 'high';
+  recorde:String;
+  file:String;
   status: TaskStatus;
-  dueDate?: Date;
-  attachments: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 const taskSchema = new Schema<ITask>(
   {
-    title: { type: String, required: true },
+    name: { type: String, required: true },
     description: { type: String },
-    project: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
-    assignedTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    project_id: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+    end_date: { type: Date },
     priority: { type:String, enum: ['low', 'medium', 'high'] },
     status: {
       type: String,
-      enum: ['todo', 'in_progress', 'done', 'blocked'],
-      default: 'todo',
+      enum: ['Pending', 'in_progress', 'done','Approved' ,'rejected'],
+      default: 'Pending',
     },
-    dueDate: { type: Date },
-    attachments: [{ type: Schema.Types.ObjectId, ref: 'Attachment' }],
+    recorde:{ type: String },
+    file:{ type: String },
   },
   { timestamps: true }
 );
