@@ -3,10 +3,10 @@ import {getUsersByProject,updateuserRole,addUserToProject,deleteUserFromProject,
 import { catchAsync } from "../../utils/catchAsync";
 const route = Router();
 
-route.get("/", catchAsync(getUsersByProject));
-route.put("/", catchAsync(updateuserRole));
+route.get("/:project_id", catchAsync(getUsersByProject));
+route.put("/:user_id/:project_id",catchAsync(updateuserRole));
 route.post("/", catchAsync(addUserToProject));
-route.delete("/", catchAsync(deleteUserFromProject));
+route.delete("/:user_id/:project_id", catchAsync(deleteUserFromProject));
 
 
 

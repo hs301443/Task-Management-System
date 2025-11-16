@@ -96,3 +96,31 @@ export const getalluserattask = async (req: Request, res: Response) => {
     const userTasks = await UserTaskModel.find({ task_id: task._id }).populate("user_id", "name email photo");
     SuccessResponse(res, { message: "Users fetched successfully", userTasks });
 };
+
+export const updateTaskStatus = async (req: Request, res: Response) => {
+  const { taskId, userId } = req.params;
+  const { status, rejection_reason } = req.body;
+
+  const userTask = await UserTaskModel.findOne({ task_id: taskId, user_id: userId });
+  if (!userTask) throw new NotFound("User task not found");
+
+  // التحقق أن الحالة الحالية هي done قبل أي تحديث
+  if (userTask.status !== 'done') {
+    throw new BadRequest("Task must be in 'done' status to approve or reject");
+  }
+
+  // تحديث الحالة
+  if (status === 'rejected') {
+    if (!rejection_reason) throw new BadRequest("Rejection reason is required");
+    userTask.status = 'pending'; // يرجع المهمة إلى pending بعد الرفض
+    userTask.rejection_reason = rejection_reason;
+  } else if (status === 'Approved') {
+    userTask.status = 'Approved';
+(userTask.rejection_reason as string | null) = rejection_reason || null;  } else {
+    throw new BadRequest("Invalid status. Only 'Approved' or 'rejected' allowed for done tasks");
+  }
+
+  await userTask.save();
+
+  return SuccessResponse(res, { message: "Task status updated successfully", userTask });
+};

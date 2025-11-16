@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getalluserattask = exports.removeUserFromTask = exports.addUserTask = void 0;
+exports.updateTaskStatus = exports.getalluserattask = exports.removeUserFromTask = exports.addUserTask = void 0;
 const Tasks_1 = require("../../models/schema/Tasks");
 const project_1 = require("../../models/schema/project");
 const BadRequest_1 = require("../../Errors/BadRequest");
@@ -83,3 +83,31 @@ const getalluserattask = async (req, res) => {
     (0, response_1.SuccessResponse)(res, { message: "Users fetched successfully", userTasks });
 };
 exports.getalluserattask = getalluserattask;
+const updateTaskStatus = async (req, res) => {
+    const { taskId, userId } = req.params;
+    const { status, rejection_reason } = req.body;
+    const userTask = await User_Task_1.UserTaskModel.findOne({ task_id: taskId, user_id: userId });
+    if (!userTask)
+        throw new NotFound_1.NotFound("User task not found");
+    // التحقق أن الحالة الحالية هي done قبل أي تحديث
+    if (userTask.status !== 'done') {
+        throw new BadRequest_1.BadRequest("Task must be in 'done' status to approve or reject");
+    }
+    // تحديث الحالة
+    if (status === 'rejected') {
+        if (!rejection_reason)
+            throw new BadRequest_1.BadRequest("Rejection reason is required");
+        userTask.status = 'pending'; // يرجع المهمة إلى pending بعد الرفض
+        userTask.rejection_reason = rejection_reason;
+    }
+    else if (status === 'Approved') {
+        userTask.status = 'Approved';
+        userTask.rejection_reason = rejection_reason || null;
+    }
+    else {
+        throw new BadRequest_1.BadRequest("Invalid status. Only 'Approved' or 'rejected' allowed for done tasks");
+    }
+    await userTask.save();
+    return (0, response_1.SuccessResponse)(res, { message: "Task status updated successfully", userTask });
+};
+exports.updateTaskStatus = updateTaskStatus;

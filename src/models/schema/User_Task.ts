@@ -5,6 +5,7 @@ export interface IUserTask extends Document {
   user_id: mongoose.Types.ObjectId;
   task_id: mongoose.Types.ObjectId;
   status?:'pending' | 'in_progress' | 'done' | 'Approved' | 'rejected';
+  rejection_reason?: string;
 }
 
 const UserTaskSchema = new Schema<IUserTask>(
@@ -24,6 +25,10 @@ const UserTaskSchema = new Schema<IUserTask>(
       enum: ['pending', 'in_progress', 'done', 'Approved', 'rejected'],
       required: true,
     },
+    rejection_reason: {
+  type: String, // سبب الرفض لو الحالة rejected
+  default: null
+}
    
   },
   { timestamps: true }

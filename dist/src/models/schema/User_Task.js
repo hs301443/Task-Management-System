@@ -51,5 +51,9 @@ const UserTaskSchema = new mongoose_1.Schema({
         enum: ['pending', 'in_progress', 'done', 'Approved', 'rejected'],
         required: true,
     },
+    rejection_reason: {
+        type: String, // سبب الرفض لو الحالة rejected
+        default: null
+    }
 }, { timestamps: true });
 exports.UserTaskModel = mongoose_1.default.model("User_Task", UserTaskSchema);
