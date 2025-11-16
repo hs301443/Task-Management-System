@@ -2,20 +2,42 @@ import { Router } from "express";
 import authRouter from "./auth";
 import projectRouter from "./project";
 import SubscriptionRouter from "./subscription";
-import DepartmentRouter  from "./Department";
+import TaskeRouter from "./Task";
+import DepartmentRouter from "./Department";
 import UserProjectRouter from "./User_Project";
 import usertaskRouter from "./User_Task";
 import { authenticated } from "../../middlewares/authenticated";
-import {  authorizeRoles } from "../../middlewares/authorized";
+import { authorizeRoles } from "../../middlewares/authorized";
+import { authorizeRoleAtProject } from "../../middlewares/authorized";
 
-export const route = Router();
+const route = Router();
 
 route.use("/auth", authRouter);
+
 route.use(authenticated, authorizeRoles('admin'));
+
 route.use("/project", projectRouter);
 route.use("/subscriptions", SubscriptionRouter);
 route.use("/departments", DepartmentRouter);
-route.use("/user-project", UserProjectRouter);
-route.use("/user-task", usertaskRouter);
+
+route.use(
+    "/tasks",
+    authenticated,
+    authorizeRoleAtProject(['administrator']),
+    TaskeRouter
+);
+route.use(
+  "/user-project",
+  authenticated,
+  authorizeRoleAtProject(['administrator']), 
+  UserProjectRouter
+);
+
+route.use(
+  "/user-task",
+  authenticated,
+  authorizeRoleAtProject(['administrator']),
+  usertaskRouter
+);
 
 export default route;

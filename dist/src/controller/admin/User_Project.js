@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateuserRole = exports.deleteUserFromProject = exports.getUsersByProject = exports.addUserToProject = void 0;
+const project_1 = require("../../models/schema/project");
 const BadRequest_1 = require("../../Errors/BadRequest");
 const NotFound_1 = require("../../Errors/NotFound");
 const response_1 = require("../../utils/response");
@@ -8,22 +9,44 @@ const User_1 = require("../../models/schema/auth/User");
 const User_Project_1 = require("../../models/schema/User_Project");
 const sendEmails_1 = require("../../utils/sendEmails");
 const addUserToProject = async (req, res) => {
-    const { user_id, project_id, role, email } = req.body;
-    let roles = role || "member"; // declare role as a let variable
+    const { user_id, project_id, role } = req.body;
+    const roles = role || "member";
     if (!user_id || !project_id) {
         throw new BadRequest_1.BadRequest("Missing required fields");
     }
+    // Check user exists
     const user = await User_1.User.findById(user_id);
-    if (!user) {
+    if (!user)
         throw new NotFound_1.NotFound("User not found");
-    }
-    const project = await User_Project_1.UserProjectModel.findById(project_id);
-    if (!project) {
+    // Check project exists
+    const project = await project_1.ProjectModel.findById(project_id);
+    if (!project)
         throw new NotFound_1.NotFound("Project not found");
-    }
-    const userProject = await User_Project_1.UserProjectModel.create({ user_id, project_id, role: roles });
-    (0, sendEmails_1.sendEmail)(user.email, "User Added to Project", `You have been added to a project as a ${roles}.`);
-    return (0, response_1.SuccessResponse)(res, { message: "User added to project successfully", userProject });
+    // Prevent duplication
+    const exists = await User_Project_1.UserProjectModel.findOne({ user_id, project_id });
+    if (exists)
+        throw new BadRequest_1.BadRequest("User already added to this project");
+    // Add user to project
+    const userProject = await User_Project_1.UserProjectModel.create({
+        user_id,
+        project_id,
+        role: roles,
+    });
+    await (0, sendEmails_1.sendEmail)(user.email, `You have been added to the project: ${project.name}`, `
+Hello ${user.name},
+
+You have been added to a new project.
+
+Project Name: ${project.name}
+Your Role: ${roles}
+
+Best regards,
+Smart College System
+`);
+    (0, response_1.SuccessResponse)(res, {
+        message: "User added to project successfully",
+        userProject,
+    });
 };
 exports.addUserToProject = addUserToProject;
 const getUsersByProject = async (req, res) => {

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { TaskModel } from '../../models/schema/Tasks';
+import { ProjectModel } from '../../models/schema/project';
 import { BadRequest } from '../../Errors/BadRequest';
 import { NotFound } from '../../Errors/NotFound';
 import { UnauthorizedError } from '../../Errors/unauthorizedError';
@@ -10,29 +11,54 @@ import {UserProjectModel} from '../../models/schema/User_Project';
 import { sendEmail } from '../../utils/sendEmails';
 
 export const addUserToProject = async (req: Request, res: Response) => {
-  const { user_id, project_id, role , email} = req.body;
-  
-  let roles = role || "member"; // declare role as a let variable
+  const { user_id, project_id, role } = req.body;
 
-  if (!user_id || !project_id ) {
+  const roles = role || "member";
+
+  if (!user_id || !project_id) {
     throw new BadRequest("Missing required fields");
   }
 
+  // Check user exists
   const user = await User.findById(user_id);
-  if (!user) {
-    throw new NotFound("User not found");
-  }
+  if (!user) throw new NotFound("User not found");
 
-  const project = await UserProjectModel.findById(project_id);
-  if (!project) {
-    throw new NotFound("Project not found");
-  }
+  // Check project exists
+  const project = await ProjectModel.findById(project_id);
+  if (!project) throw new NotFound("Project not found");
 
-  const userProject = await UserProjectModel.create({ user_id, project_id, role: roles });
-  sendEmail(user.email, "User Added to Project", `You have been added to a project as a ${roles}.`);
-  return SuccessResponse(res, { message: "User added to project successfully", userProject });
+  // Prevent duplication
+  const exists = await UserProjectModel.findOne({ user_id, project_id });
+  if (exists) throw new BadRequest("User already added to this project");
 
-}
+  // Add user to project
+  const userProject = await UserProjectModel.create({
+    user_id,
+    project_id,
+    role: roles,
+  });
+
+    await sendEmail(
+      user.email,
+      `You have been added to the project: ${project.name}`,
+      `
+Hello ${user.name},
+
+You have been added to a new project.
+
+Project Name: ${project.name}
+Your Role: ${roles}
+
+Best regards,
+Smart College System
+`
+    );
+  
+   SuccessResponse(res, {
+    message: "User added to project successfully",
+    userProject,
+  });
+};
 
 export const getUsersByProject = async (req: Request, res: Response) => {
   const { project_id } = req.params;

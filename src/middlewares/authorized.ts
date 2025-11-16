@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response, RequestHandler } from "express";
 import { UnauthorizedError } from "../Errors/unauthorizedError";
+import { BadRequest } from "../Errors/BadRequest";
+import { UserProjectModel } from "../models/schema/User_Project";
 
 export const authorizeRoles = (...roles: string[]): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -9,6 +11,38 @@ export const authorizeRoles = (...roles: string[]): RequestHandler => {
     if (!req.user?.role || !roles.includes(req.user.role)) {
       throw new UnauthorizedError(`Access denied for role: ${req.user?.role}`);
     }
+    next();
+  };
+};
+
+
+export const authorizeRoleAtProject = (roles: string[]): RequestHandler => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?.id;
+    const projectId = req.params.project_id ?? req.body.project_id;
+
+    if (!userId) throw new BadRequest("User ID missing");
+    if (!projectId) throw new BadRequest("Project ID missing");
+
+    // Super Admin على النظام يتخطى كل شيء
+    if (req.user?.role === "super_admin") return next();
+
+    // Admin على مستوى النظام يسمح له على كل مشاريع العميل
+    if (req.user?.role === "admin") return next();
+
+    // التحقق من علاقة المستخدم بالمشروع
+    const userProject = await UserProjectModel.findOne({
+      user_id: userId,
+      project_id: projectId
+    });
+
+    if (!userProject) throw new UnauthorizedError("User is not a member of the project");
+
+    // التحقق من الدور داخل المشروع
+    if (!userProject.role || !roles.includes(userProject.role)) {
+      throw new UnauthorizedError("You do not have permission for this action");
+    }
+
     next();
   };
 };
