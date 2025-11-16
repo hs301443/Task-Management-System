@@ -4,6 +4,7 @@ import paymentRouter  from "./payment";
 import paymentMethodRouter from "./payment_method";
 import ProjectRouter from './Project'
 import plansRouter from "./plans";
+import TaskeRouter from "./Taske";
 import { authenticated } from "../../middlewares/authenticated";
 import { authorizeRoles } from "../../middlewares/authorized";
 import { authorizeRoleAtProject } from "../../middlewares/authorized";
@@ -16,4 +17,7 @@ route.use("/plans", plansRouter);
 route.use("/projects",
     authorizeRoleAtProject(['member','viewer']), 
     ProjectRouter);
+route.use("/tasks", 
+    authorizeRoleAtProject(['member'])
+    ,TaskeRouter);
  export default route;
