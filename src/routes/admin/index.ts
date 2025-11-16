@@ -22,20 +22,18 @@ route.use("/departments", DepartmentRouter);
 
 route.use(
     "/tasks",
-    authenticated,
     authorizeRoleAtProject(['administrator']),
     TaskeRouter
 );
 route.use(
   "/user-project",
-  authenticated,
   authorizeRoleAtProject(['administrator']), 
   UserProjectRouter
 );
 
 route.use(
   "/user-task",
-  authenticated,
+  
   authorizeRoleAtProject(['administrator']),
   usertaskRouter
 );

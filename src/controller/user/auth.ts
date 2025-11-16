@@ -197,10 +197,12 @@ export const resetPassword = async (req: Request, res: Response) => {
 
   // توليد التوكن
   const token = generateToken({
-    id: user._id,
+    _id: user._id,
     name: user.name,
+    email: user.email,
+    role: user.role, // ✅ مهم جدًا
+    isVerified: true,
   });
-
   // إرسال الرد مع التوكن
   return SuccessResponse(res, { message: "Password reset successful", token }, 200);
 };

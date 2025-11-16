@@ -5,7 +5,7 @@ const mongoose_1 = require("mongoose");
 const taskSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     description: { type: String },
-    project_id: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Project', required: true },
+    project_id: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Project' },
     end_date: { type: Date },
     priority: { type: String, enum: ['low', 'medium', 'high'] },
     status: {

@@ -7,28 +7,40 @@ import { NotFound } from '../../Errors/NotFound';
 import { UnauthorizedError } from '../../Errors/unauthorizedError';
 import { SuccessResponse } from '../../utils/response';
 
-// إنشاء Task (Admin فقط)
+
 export const createTask = async (req: Request, res: Response) => {
+  // الـ user جاي من middleware
   const user = req.user;
-  if (!user) throw new UnauthorizedError('Access denied. Admins only.');
+  if (!user) throw new UnauthorizedError("Access denied. Admins only.");
 
-  console.log("REQ BODY:", req.body);
-  console.log("REQ FILES:", req.files);
+  console.log("BODY:", req.body);
+  console.log("FILES:", req.files);
 
-  const { name, description, project_id, priority, end_date, Depatment_id } = req.body;
+  const {
+    name,
+    description,
+    project_id,
+    priority,
+    end_date,
+    Department_id,
+  } = req.body;
 
-  if (!name) throw new BadRequest('Task name is required');
-  if (!project_id) throw new BadRequest('Project ID is required');
+  if (!name) throw new BadRequest("Task name is required");
+  if (!project_id) throw new BadRequest("Project ID is required");
 
-  const projectExists = await ProjectModel.findById(project_id);
-  if (!projectExists) throw new NotFound('Project not found');
+  // تأكد أن المشروع موجود
+  const project = await ProjectModel.findById(project_id);
+  if (!project) throw new NotFound("Project not found");
 
   const endDateObj = end_date ? new Date(end_date) : undefined;
 
-  // Type Assertion عشان TypeScript يفهم req.files
-  const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
-  const filePath = files?.file ? files.file[0].path : undefined;
-  const recordePath = files?.recorde ? files.recorde[0].path : '';
+  // --------------------------
+  //     أهم تعديل هنا 👇
+  // --------------------------
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+  const filePath = files?.file?.[0]?.path || null;
+  const recordPath = files?.record?.[0]?.path || null;
 
   const task = new TaskModel({
     name,
@@ -36,15 +48,20 @@ export const createTask = async (req: Request, res: Response) => {
     project_id,
     priority,
     end_date: endDateObj,
-    Depatment_id,
+    Department_id,
     file: filePath,
-    recorde: recordePath,
-    createdBy: user._id,
+    record: recordPath,
+    createdBy: user._id, // خلي بالك: user مش user._id
   });
 
   await task.save();
-  return SuccessResponse(res, { message: 'Task created successfully', task });
+
+  return SuccessResponse(res, {
+    message: "Task created successfully",
+    task,
+  });
 };
+
 
 // جلب كل Tasks
 export const getAllTasks = async (_req: Request, res: Response) => {

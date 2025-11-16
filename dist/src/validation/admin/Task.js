@@ -27,5 +27,4 @@ exports.updateTaskSchema = joi_1.default.object({
     recorde: joi_1.default.string().optional(),
     file: joi_1.default.string().optional(),
     Depatment_id: joi_1.default.string().optional(),
-    createdBy: joi_1.default.string().optional(),
 });

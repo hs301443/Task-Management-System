@@ -1,25 +1,24 @@
+// middleware/upload.ts
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-// 📁 تحديد مكان الحفظ
+// مجلد حفظ ملفات المهام
 const uploadDir = path.join(__dirname, '../../uploads/tasks');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// 📦 إعداد التخزين
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${file.originalname}`;
     cb(null, uniqueName);
   },
 });
 
-// 🧠 فلترة الملفات (صوت / ملف عام)
 const fileFilter = (req: any, file: any, cb: any) => {
   const allowedMimeTypes = [
     'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg',
@@ -28,8 +27,12 @@ const fileFilter = (req: any, file: any, cb: any) => {
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type'), false);
+    cb(new Error('نوع الملف غير مدعوم. يُسمح بـ: PDF, صور, صوت, ZIP'), false);
   }
 };
 
-export const upload = multer({ storage, fileFilter });
+// تصدير الـ upload مع دعم حقول متعددة
+export const uploadTaskFiles = multer({ storage, fileFilter }).fields([
+  { name: 'file', maxCount: 1 },     // ملف المهمة
+  { name: 'record', maxCount: 1 },   // ملف التسجيل (اختياري)
+]);

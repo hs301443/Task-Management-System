@@ -156,8 +156,11 @@ const resetPassword = async (req, res) => {
     await emailVerifications_1.EmailVerificationModel.deleteOne({ userId: user._id });
     // توليد التوكن
     const token = (0, auth_1.generateToken)({
-        id: user._id,
+        _id: user._id,
         name: user.name,
+        email: user.email,
+        role: user.role, // ✅ مهم جدًا
+        isVerified: true,
     });
     // إرسال الرد مع التوكن
     return (0, response_1.SuccessResponse)(res, { message: "Password reset successful", token }, 200);

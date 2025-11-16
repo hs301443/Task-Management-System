@@ -23,7 +23,7 @@ const taskSchema = new Schema<ITask>(
   {
     name: { type: String, required: true },
     description: { type: String },
-    project_id: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+    project_id: { type: Schema.Types.ObjectId, ref: 'Project' },
     end_date: { type: Date },
     priority: { type:String, enum: ['low', 'medium', 'high'] },
     status: {

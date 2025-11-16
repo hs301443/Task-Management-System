@@ -23,7 +23,7 @@ export const updateTaskSchema = Joi.object({
     recorde:Joi.string().optional(),
     file:Joi.string().optional(),
     Depatment_id:Joi.string().optional(),
-    createdBy: Joi.string().optional(),
+    
 });
 
 

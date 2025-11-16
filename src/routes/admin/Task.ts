@@ -3,7 +3,7 @@ import {createTask,getAllTasks,getTaskById,updateTask,deleteTask} from "../../co
 import { catchAsync } from "../../utils/catchAsync";
 import { validate } from "../../middlewares/validation";
 import { createTaskSchema, updateTaskSchema } from "../../validation/admin/Task";
-import { upload } from "../../utils/multer"; // ملف multer اللي عملته
+import { uploadTaskFiles } from "../../utils/multer"; // ملف multer اللي عملته
 
 
 
@@ -13,10 +13,8 @@ route.get("/", catchAsync(getAllTasks));
 route.get("/:id", catchAsync(getTaskById));
 route.post(
   "/",
-upload.fields([
-    { name: "file", maxCount: 1 },
-    { name: "recorde", maxCount: 1 }
-  ]),  validate(createTaskSchema),          // التحقق من البيانات
+uploadTaskFiles,
+  validate(createTaskSchema),        
   catchAsync(createTask)
 );
 route.put("/:id", validate(updateTaskSchema), catchAsync(updateTask));

@@ -11,39 +11,45 @@ const BadRequest_1 = require("../../Errors/BadRequest");
 const NotFound_1 = require("../../Errors/NotFound");
 const unauthorizedError_1 = require("../../Errors/unauthorizedError");
 const response_1 = require("../../utils/response");
-// إنشاء Task (Admin فقط)
 const createTask = async (req, res) => {
+    // الـ user جاي من middleware
     const user = req.user;
     if (!user)
-        throw new unauthorizedError_1.UnauthorizedError('Access denied. Admins only.');
-    console.log("REQ BODY:", req.body);
-    console.log("REQ FILES:", req.files);
-    const { name, description, project_id, priority, end_date, Depatment_id } = req.body;
+        throw new unauthorizedError_1.UnauthorizedError("Access denied. Admins only.");
+    console.log("BODY:", req.body);
+    console.log("FILES:", req.files);
+    const { name, description, project_id, priority, end_date, Department_id, } = req.body;
     if (!name)
-        throw new BadRequest_1.BadRequest('Task name is required');
+        throw new BadRequest_1.BadRequest("Task name is required");
     if (!project_id)
-        throw new BadRequest_1.BadRequest('Project ID is required');
-    const projectExists = await project_1.ProjectModel.findById(project_id);
-    if (!projectExists)
-        throw new NotFound_1.NotFound('Project not found');
+        throw new BadRequest_1.BadRequest("Project ID is required");
+    // تأكد أن المشروع موجود
+    const project = await project_1.ProjectModel.findById(project_id);
+    if (!project)
+        throw new NotFound_1.NotFound("Project not found");
     const endDateObj = end_date ? new Date(end_date) : undefined;
-    // Type Assertion عشان TypeScript يفهم req.files
+    // --------------------------
+    //     أهم تعديل هنا 👇
+    // --------------------------
     const files = req.files;
-    const filePath = files?.file ? files.file[0].path : undefined;
-    const recordePath = files?.recorde ? files.recorde[0].path : '';
+    const filePath = files?.file?.[0]?.path || null;
+    const recordPath = files?.record?.[0]?.path || null;
     const task = new Tasks_1.TaskModel({
         name,
         description,
         project_id,
         priority,
         end_date: endDateObj,
-        Depatment_id,
+        Department_id,
         file: filePath,
-        recorde: recordePath,
-        createdBy: user._id,
+        record: recordPath,
+        createdBy: user._id, // خلي بالك: user مش user._id
     });
     await task.save();
-    return (0, response_1.SuccessResponse)(res, { message: 'Task created successfully', task });
+    return (0, response_1.SuccessResponse)(res, {
+        message: "Task created successfully",
+        task,
+    });
 };
 exports.createTask = createTask;
 // جلب كل Tasks
