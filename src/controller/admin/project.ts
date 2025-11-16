@@ -7,29 +7,20 @@ import { SubscriptionModel } from "../../models/schema/subscriptions";
 
 
 export const createProject = async (req: Request, res: Response) => {
- if (!req.user) {
+  if (!req.user?._id) {
     throw new BadRequest("User information is missing in the request");
   }
-   const userId = req.user._id; // أو حسب طريقة استخراج اليوزر عندك من التوكن
+  const userId = req.user._id;
   const { name, description } = req.body;
 
-  // 1️⃣ التحقق من البيانات الأساسية
-  if (!name) {
-    throw new BadRequest("Project name is required");
-  }
+  if (!name) throw new BadRequest("Project name is required");
 
-  // 2️⃣ جلب الاشتراك الخاص بالمستخدم
+  // 1️⃣ جلب الاشتراك
   const subscription = await SubscriptionModel.findOne({ userId }).populate("planId");
-  if (!subscription) {
-    throw new BadRequest("You do not have an active subscription");
-  }
+  if (!subscription) throw new BadRequest("You do not have an active subscription");
 
-  // 3️⃣ التأكد من حالة الاشتراك
-  if (subscription.status !== "active") {
-    throw new BadRequest("Your subscription is not active");
-  }
+  if (subscription.status !== "active") throw new BadRequest("Your subscription is not active");
 
-  // 4️⃣ التأكد أن الاشتراك لم ينتهِ
   const now = new Date();
   if (subscription.endDate < now) {
     subscription.status = "expired";
@@ -37,34 +28,32 @@ export const createProject = async (req: Request, res: Response) => {
     throw new BadRequest("Your subscription has expired");
   }
 
-  // 5️⃣ التأكد من عدد المشاريع المسموح بها
+  // 2️⃣ التأكد من خطة الاشتراك
   const plan = subscription.planId as any;
-  const currentProjectsCount = await ProjectModel.countDocuments({ userId });
+  if (!plan || typeof plan.projects_limit !== "number") {
+    throw new BadRequest("Invalid plan configuration");
+  }
 
+  // 3️⃣ التأكد من عدد المشاريع الحالية
+  const currentProjectsCount = await ProjectModel.countDocuments({ userId });
   if (currentProjectsCount >= plan.projects_limit) {
     throw new BadRequest("You have reached your project limit for this plan");
   }
 
-  // 6️⃣ إنشاء المشروع الجديد
-  const newProject = new ProjectModel({
-    name,
-    description,
-    userId,
-  });
+  // 4️⃣ إنشاء المشروع
+  const newProject = await ProjectModel.create({ name, description, userId });
 
-  await newProject.save();
-
-  // 7️⃣ تحديث عدد المشاريع في الاشتراك
-  subscription.websites_created_count += 1;
-  subscription.websites_remaining_count = plan.projects_limit - (subscription.websites_created_count);
+  // 5️⃣ تحديث الاشتراك
+  subscription.websites_created_count = currentProjectsCount + 1;
+  subscription.websites_remaining_count = plan.projects_limit - subscription.websites_created_count;
   await subscription.save();
 
-  // 8️⃣ الإرجاع الناجح
   return SuccessResponse(res, {
     message: "Project created successfully",
     project: newProject,
   });
 };
+
 
 export const getAllProjects = async (req: Request, res: Response) => {
     const projects = await ProjectModel.find();

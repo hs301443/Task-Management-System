@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authenticated = authenticated;
 const auth_1 = require("../utils/auth");
 const unauthorizedError_1 = require("../Errors/unauthorizedError");
+const mongoose_1 = require("mongoose");
 function authenticated(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -11,8 +12,12 @@ function authenticated(req, res, next) {
     const token = authHeader.split(" ")[1];
     try {
         const decoded = (0, auth_1.verifyToken)(token);
-        // حفظ بيانات المستخدم في req.user
-        req.user = decoded;
+        // نخزن بيانات المستخدم في req.user بشكل موحد
+        req.user = {
+            _id: new mongoose_1.Types.ObjectId(decoded.id),
+            role: decoded.role,
+            email: decoded.email,
+        };
         next();
     }
     catch (error) {

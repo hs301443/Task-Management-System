@@ -10,32 +10,40 @@ import { SuccessResponse } from '../../utils/response';
 // إنشاء Task (Admin فقط)
 export const createTask = async (req: Request, res: Response) => {
   const user = req.user;
-    if (!user) throw new UnauthorizedError('Access denied. Admins only.');
-    const { name, description, project_id, priority, end_date, Depatment_id } = req.body;
+  if (!user) throw new UnauthorizedError('Access denied. Admins only.');
 
-    // التأكد من وجود المشروع
-    const projectExists = await ProjectModel.findById(project_id);
-    if (!projectExists) throw new NotFound('Project not found');
+  console.log("REQ BODY:", req.body);
+  console.log("REQ FILES:", req.files);
 
-    // الملفات
-    const file = req.file?.path;           // ملف عادي
-    const recorde = req.body.recorde || ''; // تسجيل حي (لو موجود كمسار)
+  const { name, description, project_id, priority, end_date, Depatment_id } = req.body;
 
-    const task = new TaskModel({
-      name,
-      description,
-      project_id,
-      priority,
-      end_date,
-      Depatment_id,
-      file,
-      recorde,
-      createdBy: user._id,
-    });
+  if (!name) throw new BadRequest('Task name is required');
+  if (!project_id) throw new BadRequest('Project ID is required');
 
-    await task.save();
-     SuccessResponse(res,{message: 'Task created successfully', task});
+  const projectExists = await ProjectModel.findById(project_id);
+  if (!projectExists) throw new NotFound('Project not found');
 
+  const endDateObj = end_date ? new Date(end_date) : undefined;
+
+  // Type Assertion عشان TypeScript يفهم req.files
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+  const filePath = files?.file ? files.file[0].path : undefined;
+  const recordePath = files?.recorde ? files.recorde[0].path : '';
+
+  const task = new TaskModel({
+    name,
+    description,
+    project_id,
+    priority,
+    end_date: endDateObj,
+    Depatment_id,
+    file: filePath,
+    recorde: recordePath,
+    createdBy: user._id,
+  });
+
+  await task.save();
+  return SuccessResponse(res, { message: 'Task created successfully', task });
 };
 
 // جلب كل Tasks

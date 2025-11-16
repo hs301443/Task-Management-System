@@ -16,27 +16,34 @@ const createTask = async (req, res) => {
     const user = req.user;
     if (!user)
         throw new unauthorizedError_1.UnauthorizedError('Access denied. Admins only.');
+    console.log("REQ BODY:", req.body);
+    console.log("REQ FILES:", req.files);
     const { name, description, project_id, priority, end_date, Depatment_id } = req.body;
-    // التأكد من وجود المشروع
+    if (!name)
+        throw new BadRequest_1.BadRequest('Task name is required');
+    if (!project_id)
+        throw new BadRequest_1.BadRequest('Project ID is required');
     const projectExists = await project_1.ProjectModel.findById(project_id);
     if (!projectExists)
         throw new NotFound_1.NotFound('Project not found');
-    // الملفات
-    const file = req.file?.path; // ملف عادي
-    const recorde = req.body.recorde || ''; // تسجيل حي (لو موجود كمسار)
+    const endDateObj = end_date ? new Date(end_date) : undefined;
+    // Type Assertion عشان TypeScript يفهم req.files
+    const files = req.files;
+    const filePath = files?.file ? files.file[0].path : undefined;
+    const recordePath = files?.recorde ? files.recorde[0].path : '';
     const task = new Tasks_1.TaskModel({
         name,
         description,
         project_id,
         priority,
-        end_date,
+        end_date: endDateObj,
         Depatment_id,
-        file,
-        recorde,
+        file: filePath,
+        recorde: recordePath,
         createdBy: user._id,
     });
     await task.save();
-    (0, response_1.SuccessResponse)(res, { message: 'Task created successfully', task });
+    return (0, response_1.SuccessResponse)(res, { message: 'Task created successfully', task });
 };
 exports.createTask = createTask;
 // جلب كل Tasks
