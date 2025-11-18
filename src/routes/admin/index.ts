@@ -8,7 +8,7 @@ import UserProjectRouter from "./User_Project";
 import usertaskRouter from "./User_Task";
 import { authenticated } from "../../middlewares/authenticated";
 import { authorizeRoles } from "../../middlewares/authorized";
-import { authorizeRoleAtProject } from "../../middlewares/authorized";
+// import { authorizeRoleAtProject } from "../../middlewares/authorized";
 
 const route = Router();
 
@@ -26,12 +26,13 @@ route.use(
 );
 route.use(
   "/user-project",
+  // authorizeRoleAtProject(['adminstrator']),
   UserProjectRouter
 );
 
 route.use(
   "/user-task",
-  
+  // authorizeRoleAtProject(['adminstrator']),
   usertaskRouter
 );
 

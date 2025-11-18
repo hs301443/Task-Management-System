@@ -3,11 +3,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.requestTaskApproval = exports.getMyTasks = exports.updateUserTaskStatus = exports.getUserTasksByProject = void 0;
 const BadRequest_1 = require("../../Errors/BadRequest");
 const NotFound_1 = require("../../Errors/NotFound");
+const unauthorizedError_1 = require("../../Errors/unauthorizedError");
 const response_1 = require("../../utils/response");
 const User_Project_1 = require("../../models/schema/User_Project");
 const User_Task_1 = require("../../models/schema/User_Task");
 const getUserTasksByProject = async (req, res) => {
     const userId = req.user?._id; // _id من الـ user
+    if (!userId)
+        throw new unauthorizedError_1.UnauthorizedError("You are not authorized to perform this action");
+    let useratproject = await User_Project_1.UserProjectModel.findOne({ userId: userId });
+    if (useratproject?.role !== "administrator")
+        throw new unauthorizedError_1.UnauthorizedError("You are not authorized to perform this action");
     const { project_id } = req.params;
     if (!userId || !project_id)
         throw new BadRequest_1.BadRequest("User ID or Project ID missing");
@@ -27,7 +33,12 @@ const getUserTasksByProject = async (req, res) => {
 };
 exports.getUserTasksByProject = getUserTasksByProject;
 const updateUserTaskStatus = async (req, res) => {
-    const userId = req.user?._id; // استخدم _id من الـ user
+    const userId = req.user?._id; // _id من الـ user
+    if (!userId)
+        throw new unauthorizedError_1.UnauthorizedError("You are not authorized to perform this action");
+    let useratproject = await User_Project_1.UserProjectModel.findOne({ userId: userId });
+    if ((useratproject?.role === "administrator") || (useratproject?.role === "Member"))
+        throw new unauthorizedError_1.UnauthorizedError("You are not authorized to perform this action");
     const { taskId } = req.params;
     const { status } = req.body;
     if (!userId || !taskId || !status)

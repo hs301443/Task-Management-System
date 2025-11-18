@@ -12,7 +12,12 @@ import { TaskModel } from "../../models/schema/Tasks";
 import { UserTaskModel } from "../../models/schema/User_Task";
 
 export const getUserTasksByProject = async (req: Request, res: Response) => {
+
   const userId = req.user?._id; // _id من الـ user
+ if(!userId) throw new UnauthorizedError("You are not authorized to perform this action");
+ let useratproject =await UserProjectModel.findOne({userId:userId})
+ if(useratproject?.role !== "administrator") throw new UnauthorizedError("You are not authorized to perform this action");
+ 
   const { project_id } = req.params;
 
   if (!userId || !project_id) throw new BadRequest("User ID or Project ID missing");
@@ -35,8 +40,10 @@ export const getUserTasksByProject = async (req: Request, res: Response) => {
 };
 
 export const updateUserTaskStatus = async (req: Request, res: Response) => {
-  const userId = req.user?._id; // استخدم _id من الـ user
-  const { taskId } = req.params;
+  const userId = req.user?._id; // _id من الـ user
+ if(!userId) throw new UnauthorizedError("You are not authorized to perform this action");
+ let useratproject =await UserProjectModel.findOne({userId:userId})
+if((useratproject?.role === "administrator") || (useratproject?.role === "Member")) throw new UnauthorizedError("You are not authorized to perform this action");  const { taskId } = req.params;
   const { status } = req.body;
 
   if (!userId || !taskId || !status) throw new BadRequest("Missing required fields");
