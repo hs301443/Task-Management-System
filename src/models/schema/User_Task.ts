@@ -4,8 +4,8 @@ import {  TaskStatus } from "./Tasks";
 export interface IUserTask extends Document {
   userId: mongoose.Types.ObjectId;
   task_id: mongoose.Types.ObjectId;
-  status?:'pending' | 'in_progress' | 'done' | 'Approved' | 'rejected' | 'Pending_Approval';
-  rejection_reason?: string;
+  status?:'pending' | 'in_progress' | 'done' | 'Approved' | 'rejected' | 'Pending_edit' | 'in_progress_edit';
+  rejection_reason:mongoose.Types.ObjectId;
 }
 
 const UserTaskSchema = new Schema<IUserTask>(
@@ -22,12 +22,13 @@ const UserTaskSchema = new Schema<IUserTask>(
     },
     status: {
       type: String,
-     enum: ['pending', 'in_progress', 'done', 'Pending_Approval', 'Approved', 'rejected'],
+     enum: ['pending', 'in_progress', 'done', 'pending_edit',"in_progress_edit", 'Approved', 'rejected'],
       required: true,
     },
     rejection_reason: {
-  type: String, // سبب الرفض لو الحالة rejected
-  default: null
+      type: Schema.Types.ObjectId, // سبب الرفض لو الحالة rejected
+      ref: "RejectedReson",
+
 }
    
   },

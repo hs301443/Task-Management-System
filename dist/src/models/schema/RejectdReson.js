@@ -33,27 +33,10 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserProjectModel = void 0;
+exports.RejectedReson = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const UserProjectSchema = new mongoose_1.Schema({
-    email: {
-        type: String,
-        required: true,
-    },
-    userId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-    },
-    project_id: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: "Project",
-        required: true,
-    },
-    role: {
-        type: String,
-        enum: ["teamlead", "administrator", "Member", "Viewer"],
-        default: "Member",
-    },
+const RejectdResonSchema = new mongoose_1.Schema({
+    reason: { type: String, required: true },
+    points: { type: Number, required: true },
 }, { timestamps: true });
-exports.UserProjectModel = mongoose_1.default.model("User_Project", UserProjectSchema);
+exports.RejectedReson = mongoose_1.default.model('RejectedReson', RejectdResonSchema);

@@ -9,6 +9,7 @@ export interface IUser extends Document {
   password: string;
   isVerified: boolean;
   googleId?: string;
+  totalRejectedPoints: number;
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -27,6 +28,8 @@ const userSchema = new Schema<IUser>(
       default: 'user',
     },
     googleId: { type: String, unique: true, sparse: true },
+     totalRejectedPoints: { type: Number, default: 0 }, // ⬅ جديد
+
   },
   { timestamps: true }
 );

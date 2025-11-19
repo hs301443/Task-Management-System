@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const RejectedReson_1 = require("../../controller/admin/RejectedReson");
+const catchAsync_1 = require("../../utils/catchAsync");
+const validation_1 = require("../../middlewares/validation");
+const RejectedReson_2 = require("../../validation/admin/RejectedReson");
+const route = (0, express_1.Router)();
+route.post("/", (0, validation_1.validate)(RejectedReson_2.createRejectedResonSchema), (0, catchAsync_1.catchAsync)(RejectedReson_1.addRejectedReson));
+route.get("/", (0, catchAsync_1.catchAsync)(RejectedReson_1.getRejectedResons));
+route.get("/:id", (0, catchAsync_1.catchAsync)(RejectedReson_1.getRejectedResonById));
+route.put("/:id", (0, validation_1.validate)(RejectedReson_2.updateRejectedResonSchema), (0, catchAsync_1.catchAsync)(RejectedReson_1.updateRejectedReson));
+route.delete("/:id", (0, catchAsync_1.catchAsync)(RejectedReson_1.deleteRejectedResonById));
+exports.default = route;

@@ -13,5 +13,6 @@ const userSchema = new mongoose_1.Schema({
         default: 'user',
     },
     googleId: { type: String, unique: true, sparse: true },
+    totalRejectedPoints: { type: Number, default: 0 }, // ⬅ جديد
 }, { timestamps: true });
 exports.User = (0, mongoose_1.model)('User', userSchema);

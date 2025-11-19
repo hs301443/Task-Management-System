@@ -1,3 +1,4 @@
+
 import { Schema, model, Document, Types } from 'mongoose';
 import { IUser } from './auth/User';
 import { IProject } from './project';
@@ -9,12 +10,17 @@ export interface ITask extends Document {
   description?: string;
   projectId: Types.ObjectId | IProject;
   end_date?: Date;
+  start_date?: Date;
   priority?: 'low' | 'medium' | 'high';
-  recorde:String;
-  file:String;
+  recorde: string;
+  file: string;
   status: TaskStatus;
   userId: Types.ObjectId | IUser;
   Depatment_id?: Types.ObjectId;
+  depends_on: {
+    user_id: Types.ObjectId | IUser;
+    is_done: boolean;
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,21 +29,41 @@ const taskSchema = new Schema<ITask>(
   {
     name: { type: String, required: true },
     description: { type: String },
-    projectId: { type: Schema.Types.ObjectId, ref: 'Project' },
+    projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+    start_date: { type: Date },
     end_date: { type: Date },
-    priority: { type:String, enum: ['low', 'medium', 'high'] },
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+      default: 'medium',
+    },
     status: {
       type: String,
-      enum: ['Pending', 'in_progress', 'done','Approved' ,'rejected'],
+      enum: ['Pending', 'in_progress', 'done', 'Approved', 'rejected'],
       default: 'Pending',
     },
-    recorde:{ type: String },
-    file:{ type: String },
-    Depatment_id:{ type: Schema.Types.ObjectId, ref: 'Department' },
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    recorde: { type: String, default: '' },
+    file: { type: String, default: '' },
+    Depatment_id: { type: Schema.Types.ObjectId, ref: 'Department' },
 
+  
+    depends_on: [
+      {
+        user_id: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        is_done: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
   },
-  { timestamps: true }
+  {
+    timestamps: true, 
+   }
 );
 
 export const TaskModel = model<ITask>('Task', taskSchema);

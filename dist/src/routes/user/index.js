@@ -9,7 +9,8 @@ const payment_1 = __importDefault(require("./payment"));
 const payment_method_1 = __importDefault(require("./payment_method"));
 const Project_1 = __importDefault(require("./Project"));
 const plans_1 = __importDefault(require("./plans"));
-const Taske_1 = __importDefault(require("./Taske"));
+// import TaskeRouter from "./Taske";
+const User_Rejection_1 = __importDefault(require("./User_Rejection"));
 const authenticated_1 = require("../../middlewares/authenticated");
 const authorized_1 = require("../../middlewares/authorized");
 // import { authorizeRoleAtProject } from "../../middlewares/authorized";
@@ -19,6 +20,8 @@ route.use(authenticated_1.authenticated, (0, authorized_1.authorizeRoles)('user'
 route.use("/payment-methods", payment_method_1.default);
 route.use("/payments", payment_1.default);
 route.use("/plans", plans_1.default);
+route.use("/user-rejections", User_Rejection_1.default);
 route.use("/projects", Project_1.default);
-route.use("/tasks", Taske_1.default);
+// route.use("/tasks", 
+//  TaskeRouter);
 exports.default = route;
