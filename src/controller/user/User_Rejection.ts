@@ -10,7 +10,7 @@ import { User } from "../../models/schema/auth/User";
 
 export const getuserRejection = async (req: Request, res: Response) => {
 const user = req.user?._id; ;
-const userRejection = await UserRejectedReason.find({ userId: user }).populate("reasonId","reason points").populate("userId","name email photo");
+const userRejection = await UserRejectedReason.find({ userId: user }).populate("reasonId","reason points").populate("userId","name email photo").populate("taskId","name priority status startDate endDate");
  SuccessResponse(res,{message: "user Rejection", userRejection});
 }
 
@@ -20,6 +20,6 @@ export const getUserRejectionById = async (req: Request, res: Response) => {
  if (!id) {
    throw new BadRequest("Please provide user id");
  }
-  const userRejection = await UserRejectedReason.findById(id).populate("reasonId","reason points").populate("userId","name email photo");
+  const userRejection = await UserRejectedReason.findById(id).populate("reasonId","reason points").populate("userId","name email photo").populate("taskId","name priority status startDate endDate");
   SuccessResponse(res,{message: "user Rejection", userRejection});
 }

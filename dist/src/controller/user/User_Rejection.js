@@ -7,7 +7,7 @@ const User_Rejection_1 = require("../../models/schema/User_Rejection");
 const getuserRejection = async (req, res) => {
     const user = req.user?._id;
     ;
-    const userRejection = await User_Rejection_1.UserRejectedReason.find({ userId: user }).populate("reasonId", "reason points").populate("userId", "name email photo");
+    const userRejection = await User_Rejection_1.UserRejectedReason.find({ userId: user }).populate("reasonId", "reason points").populate("userId", "name email photo").populate("taskId", "name priority status startDate endDate");
     (0, response_1.SuccessResponse)(res, { message: "user Rejection", userRejection });
 };
 exports.getuserRejection = getuserRejection;
@@ -17,7 +17,7 @@ const getUserRejectionById = async (req, res) => {
     if (!id) {
         throw new BadRequest_1.BadRequest("Please provide user id");
     }
-    const userRejection = await User_Rejection_1.UserRejectedReason.findById(id).populate("reasonId", "reason points").populate("userId", "name email photo");
+    const userRejection = await User_Rejection_1.UserRejectedReason.findById(id).populate("reasonId", "reason points").populate("userId", "name email photo").populate("taskId", "name priority status startDate endDate");
     (0, response_1.SuccessResponse)(res, { message: "user Rejection", userRejection });
 };
 exports.getUserRejectionById = getUserRejectionById;

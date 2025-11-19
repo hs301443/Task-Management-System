@@ -25,7 +25,7 @@ const UserProjectSchema = new Schema<IUserProject>(
     },
     role: {
       type: String,
-      enum: ["teamlead","administrator", "Member", "Viewer"],
+      enum: ["teamlead", "Member", "Viewer"],
       default: "Member",
     },
   },

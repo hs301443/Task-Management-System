@@ -21,19 +21,6 @@ const taskSchema = new mongoose_1.Schema({
     recorde: { type: String, default: '' },
     file: { type: String, default: '' },
     Depatment_id: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Department' },
-    depends_on: [
-        {
-            user_id: {
-                type: mongoose_1.Schema.Types.ObjectId,
-                ref: 'User',
-                required: true,
-            },
-            is_done: {
-                type: Boolean,
-                default: false,
-            },
-        },
-    ],
 }, {
     timestamps: true,
 });

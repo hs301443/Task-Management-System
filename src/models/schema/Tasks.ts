@@ -47,19 +47,7 @@ const taskSchema = new Schema<ITask>(
     Depatment_id: { type: Schema.Types.ObjectId, ref: 'Department' },
 
   
-    depends_on: [
-      {
-        user_id: {
-          type: Schema.Types.ObjectId,
-          ref: 'User',
-          required: true,
-        },
-        is_done: {
-          type: Boolean,
-          default: false,
-        },
-      },
-    ],
+   
   },
   {
     timestamps: true, 

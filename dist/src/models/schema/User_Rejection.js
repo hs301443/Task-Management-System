@@ -38,5 +38,6 @@ const mongoose_1 = __importStar(require("mongoose"));
 const UserRejectedReasonSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
     reasonId: { type: mongoose_1.Schema.Types.ObjectId, ref: "RejectedReson", required: true },
+    taskId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Task", required: true },
 }, { timestamps: true });
 exports.UserRejectedReason = mongoose_1.default.model("UserRejectedReason", UserRejectedReasonSchema);
