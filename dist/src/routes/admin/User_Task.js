@@ -1,33 +1,14 @@
 "use strict";
-// import { Router } from "express";
-// import {
-//   addUserTask,
-//   getalluserattask,
-//   removeUserFromTask,
-//   updateTaskStatus
-// } from "../../controller/admin/User_Task";
-// import { catchAsync } from "../../utils/catchAsync";
-// import { authenticated } from "../../middlewares/authenticated";
-// // import { authorizeRoleAtProject } from "../../middlewares/authorized";
-// const route = Router();
-// // إضافة يوزر للتاسك → فقط Admin/Administrator
-// route.post(
-//   "/",
-//   catchAsync(addUserTask)
-// );
-// // جلب كل اليوزرز في التاسك
-// route.get(
-//   "/:taskId",
-//   catchAsync(getalluserattask)
-// );
-// // حذف يوزر من التاسك → فقط Admin/Administrator
-// route.delete(
-//   "/:taskId/:user_id",
-//   catchAsync(removeUserFromTask)
-// );
-// // تحديث حالة التاسك → فقط Admin/Administrator، و Task يجب أن تكون done
-// route.put(
-//   "/:taskId/:userId",
-//   catchAsync(updateTaskStatus)
-// );
-// export default route;
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const User_Task_1 = require("../../controller/admin/User_Task");
+const catchAsync_1 = require("../../utils/catchAsync");
+const validation_1 = require("../../middlewares/validation");
+const User_Task_2 = require("../../validation/admin/User_Task");
+const route = (0, express_1.Router)();
+route.post("/", (0, validation_1.validate)(User_Task_2.createUserTaskSchema), (0, catchAsync_1.catchAsync)(User_Task_1.addUserToTask));
+route.put("/:id", (0, catchAsync_1.catchAsync)(User_Task_1.updateUserTaskStatus));
+route.put("/role/:id", (0, catchAsync_1.catchAsync)(User_Task_1.updaterole));
+route.delete("/:taskId/:userId", (0, catchAsync_1.catchAsync)(User_Task_1.removedUserFromTask));
+route.get("/:id", (0, catchAsync_1.catchAsync)(User_Task_1.getAllUserTask));
+exports.default = route;

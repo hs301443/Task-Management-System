@@ -1,38 +1,12 @@
-// import { Router } from "express";
-// import {
-//   addUserTask,
-//   getalluserattask,
-//   removeUserFromTask,
-//   updateTaskStatus
-// } from "../../controller/admin/User_Task";
-// import { catchAsync } from "../../utils/catchAsync";
-// import { authenticated } from "../../middlewares/authenticated";
-// // import { authorizeRoleAtProject } from "../../middlewares/authorized";
-
-// const route = Router();
-
-// // إضافة يوزر للتاسك → فقط Admin/Administrator
-// route.post(
-//   "/",
-//   catchAsync(addUserTask)
-// );
-
-// // جلب كل اليوزرز في التاسك
-// route.get(
-//   "/:taskId",
-//   catchAsync(getalluserattask)
-// );
-
-// // حذف يوزر من التاسك → فقط Admin/Administrator
-// route.delete(
-//   "/:taskId/:user_id",
-//   catchAsync(removeUserFromTask)
-// );
-
-// // تحديث حالة التاسك → فقط Admin/Administrator، و Task يجب أن تكون done
-// route.put(
-//   "/:taskId/:userId",
-//   catchAsync(updateTaskStatus)
-// );
-
-// export default route;
+import { Router } from "express";
+import {addUserToTask,updateUserTaskStatus,updaterole,removedUserFromTask,getAllUserTask} from "../../controller/admin/User_Task";
+import { catchAsync } from "../../utils/catchAsync";
+import { validate } from "../../middlewares/validation";
+import { createUserTaskSchema } from "../../validation/admin/User_Task";
+const route = Router();
+route.post("/",validate(createUserTaskSchema) ,catchAsync(addUserToTask));
+route.put("/:id" ,catchAsync(updateUserTaskStatus));
+route.put("/role/:id" ,catchAsync(updaterole));
+route.delete("/:taskId/:userId", catchAsync(removedUserFromTask));
+route.get("/:id", catchAsync(getAllUserTask));
+export default route;

@@ -3,7 +3,7 @@ import {  TaskStatus } from "./Tasks";
 import { IUser } from "./auth/User";
 
 export interface IUserTask extends Document {
-  userId: mongoose.Types.ObjectId;
+  user_id: mongoose.Types.ObjectId;
   task_id: mongoose.Types.ObjectId;
   status?:'pending' | 'in_progress' | 'done' | 'Approved from Member_can_approve' | 'rejected' | 'Pending_edit' | 'in_progress_edit' | 'approved' ;
   rejection_reasonId:mongoose.Types.ObjectId;
@@ -14,7 +14,7 @@ User_taskId: mongoose.Types.ObjectId[];
 
 const UserTaskSchema = new Schema<IUserTask>(
   {
-    userId: {
+    user_id: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,

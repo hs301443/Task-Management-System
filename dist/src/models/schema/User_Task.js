@@ -36,7 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserTaskModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const UserTaskSchema = new mongoose_1.Schema({
-    userId: {
+    user_id: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "User",
         required: true,

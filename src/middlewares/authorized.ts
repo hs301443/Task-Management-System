@@ -3,6 +3,7 @@ import { UnauthorizedError } from "../Errors/unauthorizedError";
 import { UserProjectModel } from "../models/schema/User_Project";
 import { UserTaskModel } from "../models/schema/User_Task";
 import mongoose from "mongoose";
+import { NotFound } from "../Errors";
 
 // Middleware للتحقق من صلاحيات عامة حسب الدور على النظام
 export const authorizeRoles = (...roles: string[]): RequestHandler => {
@@ -20,26 +21,24 @@ export const checkProjectOrTaskRole = (allowedRoles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?._id || req.user?.id;
-      const role = req.user?.role?.toLowerCase() || "";
+      const globalRole = req.user?.role?.toLowerCase() || "";
 
       if (!userId) throw new UnauthorizedError("Unauthorized");
 
-      // ✅ Admin bypass
-      if (role === "admin") return next();
+      // Admin bypass
+      if (globalRole === "admin") return next();
 
-      // Only "user" or Admin allowed
-      if (role !== "user") {
+      // Only "user" role allowed
+      if (globalRole !== "user") {
         throw new UnauthorizedError("Only user or admin can access");
       }
-
-      console.log("⚡ Route Params:", req.params);
 
       const { project_id, taskId } = req.params;
       let projectRole: string | null = null;
       let taskRole: string | null = null;
 
       // --------------------------
-      // CHECK PROJECT ROLE
+      // Check Project role
       // --------------------------
       if (project_id && mongoose.Types.ObjectId.isValid(project_id)) {
         const userProject = await UserProjectModel.findOne({
@@ -48,35 +47,29 @@ export const checkProjectOrTaskRole = (allowedRoles: string[]) => {
         });
 
         if (!userProject) {
-          console.log("❌ No UserProject found for:", {
-            user_id: userId,
-            project_id,
-          });
-        } else {
-          projectRole = userProject.role ?? null;
+          throw new NotFound("User is not part of this project");
         }
+        projectRole = userProject.role ?? null;
       }
 
       // --------------------------
-      // CHECK TASK ROLE
+      // Check Task role
       // --------------------------
       if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
         const userTask = await UserTaskModel.findOne({
-          user_id: userId,
+          userId: userId,
           task_id: taskId,
         });
 
         if (!userTask) {
-          console.log("❌ No UserTask found for:", {
-            user_id: userId,
-            task_id: taskId,
-          });
-        } else {
-          taskRole = userTask.role ?? null;
+          throw new NotFound("User is not part of this task");
         }
+        taskRole = userTask.role ?? null;
       }
 
+      // --------------------------
       // Allow endpoints without project or task
+      // --------------------------
       if (!project_id && !taskId) return next();
 
       const allowedRolesLower = allowedRoles.map(r => r.toLowerCase());
@@ -85,20 +78,13 @@ export const checkProjectOrTaskRole = (allowedRoles: string[]) => {
         (projectRole && allowedRolesLower.includes(projectRole.toLowerCase())) ||
         (taskRole && allowedRolesLower.includes(taskRole.toLowerCase()));
 
-      // --------------------------
-      // DEBUG
-      // --------------------------
-      console.log("🔍 Allowed roles:", allowedRolesLower);
-      console.log("🔍 User projectRole:", projectRole);
-      console.log("🔍 User taskRole:", taskRole);
-      console.log("🔍 isAllowed:", isAllowed);
-
       if (!isAllowed) {
         throw new UnauthorizedError(
           `Access denied. Allowed roles: ${allowedRoles.join(", ")}`
         );
       }
 
+      // Save roles for later use in controllers
       res.locals.userProjectRole = projectRole;
       res.locals.userTaskRole = taskRole;
 
@@ -108,3 +94,4 @@ export const checkProjectOrTaskRole = (allowedRoles: string[]) => {
     }
   };
 };
+
