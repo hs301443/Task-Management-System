@@ -1,29 +1,75 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTask = exports.updateTask = exports.getTaskById = exports.getAllTasks = exports.createTask = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
+const mongoose_1 = __importStar(require("mongoose"));
 const Tasks_1 = require("../../models/schema/Tasks");
 const project_1 = require("../../models/schema/project");
+const User_Project_1 = require("../../models/schema/User_Project");
 const BadRequest_1 = require("../../Errors/BadRequest");
 const NotFound_1 = require("../../Errors/NotFound");
 const unauthorizedError_1 = require("../../Errors/unauthorizedError");
 const response_1 = require("../../utils/response");
-const mongoose_2 = require("mongoose");
+// --------------------------
+// CREATE TASK
+// --------------------------
 const createTask = async (req, res) => {
     const user = req.user?._id;
     if (!user)
         throw new unauthorizedError_1.UnauthorizedError("Access denied.");
-    const { name, description, projectId, priority, end_date, Depatment_id, } = req.body;
+    const { name, description, projectId, priority, end_date, Depatment_id } = req.body;
     if (!name)
         throw new BadRequest_1.BadRequest("Task name is required");
     if (!projectId)
         throw new BadRequest_1.BadRequest("Project ID is required");
+    // تأكد أن المشروع موجود
     const project = await project_1.ProjectModel.findById(projectId);
     if (!project)
         throw new NotFound_1.NotFound("Project not found");
+    // تحقق صلاحية المستخدم في المشروع
+    const checkuseratproject = await User_Project_1.UserProjectModel.findOne({
+        user_id: user,
+        project_id: projectId
+    });
+    const role = req.user?.role?.toLowerCase();
+    if (role !== "admin") {
+        const userProjectRole = checkuseratproject?.role?.toLowerCase() ?? '';
+        if (!checkuseratproject || ["member", "membercanapprove"].includes(userProjectRole)) {
+            throw new unauthorizedError_1.UnauthorizedError("You can't create a task for this project");
+        }
+    }
     const endDateObj = end_date ? new Date(end_date) : undefined;
     // التعامل مع الملفات
     const files = req.files;
@@ -32,54 +78,66 @@ const createTask = async (req, res) => {
     const task = new Tasks_1.TaskModel({
         name,
         description,
-        projectId: new mongoose_2.Types.ObjectId(projectId),
+        projectId: new mongoose_1.Types.ObjectId(projectId),
         priority,
         end_date: endDateObj,
-        Depatment_id: Depatment_id ? new mongoose_2.Types.ObjectId(Depatment_id) : undefined,
+        Depatment_id: Depatment_id ? new mongoose_1.Types.ObjectId(Depatment_id) : undefined,
         file: filePath,
         recorde: recordPath,
-        userId: user,
+        createdBy: user,
     });
     await task.save();
-    // تحويل المسار المحلي لروابط ديناميكية حسب السيرفر
     const protocol = req.protocol;
     const host = req.get("host");
     const fileUrl = task.file ? `${protocol}://${host}/${task.file.replace(/\\/g, "/")}` : null;
     const recordUrl = task.recorde ? `${protocol}://${host}/${task.recorde.replace(/\\/g, "/")}` : null;
     (0, response_1.SuccessResponse)(res, {
         message: 'Task created successfully',
-        task: {
-            ...task.toObject(),
-            file: fileUrl,
-            recorde: recordUrl,
-        }
+        task: { ...task.toObject(), file: fileUrl, recorde: recordUrl }
     });
 };
 exports.createTask = createTask;
-// جلب كل المهام
+// --------------------------
+// GET ALL TASKS
+// --------------------------
 const getAllTasks = async (_req, res) => {
+    const user = _req.user?._id;
+    if (!user)
+        throw new unauthorizedError_1.UnauthorizedError('Access denied.');
+    const checkuseratproject = await User_Project_1.UserProjectModel.findOne({ user_id: user });
+    const role = _req.user?.role?.toLowerCase();
+    if (role !== "admin") {
+        const userProjectRole = checkuseratproject?.role?.toLowerCase() ?? '';
+        if (!checkuseratproject || ["member", "membercanapprove"].includes(userProjectRole)) {
+            throw new unauthorizedError_1.UnauthorizedError("You can't view tasks for this project");
+        }
+    }
     const tasks = await Tasks_1.TaskModel.find()
         .populate('projectId') // بدل project_id
-        .populate('Depatment_id') // صح
-        .populate('userId', 'name email'); // بدل createdBy
+        .populate('Depatment_id') // بدل Depatment_id
+        .populate('createdBy', 'name email'); // بدل createdBy
     (0, response_1.SuccessResponse)(res, { message: 'Tasks fetched successfully', tasks });
 };
 exports.getAllTasks = getAllTasks;
-// جلب مهمة واحدة
+// --------------------------
+// GET TASK BY ID
+// --------------------------
 const getTaskById = async (req, res) => {
     const { id } = req.params;
     if (!mongoose_1.default.Types.ObjectId.isValid(id))
         throw new BadRequest_1.BadRequest('Invalid Task ID');
     const task = await Tasks_1.TaskModel.findById(id)
         .populate('projectId') // بدل project_id
-        .populate('Depatment_id') // صح
-        .populate('userId', 'name email'); // بدل createdBy
+        .populate('Depatment_id') // بدل Depatment_id
+        .populate('createdBy', 'name email'); // بدل createdBy
     if (!task)
         throw new NotFound_1.NotFound('Task not found');
     (0, response_1.SuccessResponse)(res, { message: 'Task fetched successfully', task });
 };
 exports.getTaskById = getTaskById;
-// تحديث Task (Admin فقط)
+// --------------------------
+// UPDATE TASK
+// --------------------------
 const updateTask = async (req, res) => {
     const user = req.user;
     if (!user)
@@ -93,17 +151,21 @@ const updateTask = async (req, res) => {
     // تحديث الحقول
     const updates = req.body;
     if (req.file)
-        updates.file = req.file.path; // تحديث الملف
+        updates.file = req.file.path;
     if (req.body.recorde)
-        updates.recorde = req.body.recorde; // تحديث التسجيل
+        updates.recorde = req.body.recorde;
     Object.assign(task, updates);
     await task.save();
     (0, response_1.SuccessResponse)(res, { message: 'Task updated successfully', task });
 };
 exports.updateTask = updateTask;
-// حذف Task (Admin فقط)
+// --------------------------
+// DELETE TASK
+// --------------------------
 const deleteTask = async (req, res) => {
     const user = req.user;
+    if (!user)
+        throw new unauthorizedError_1.UnauthorizedError('Access denied.');
     const { id } = req.params;
     if (!mongoose_1.default.Types.ObjectId.isValid(id))
         throw new BadRequest_1.BadRequest('Invalid Task ID');

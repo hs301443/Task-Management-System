@@ -4,19 +4,29 @@ import { catchAsync } from "../../utils/catchAsync";
 import { validate } from "../../middlewares/validation";
 import { createTaskSchema, updateTaskSchema } from "../../validation/admin/Task";
 import { uploadTaskFiles } from "../../utils/multer"; // ملف multer اللي عملته
+import { authorizeRoles, checkProjectOrTaskRole } from "../../middlewares/authorized";
 
 
 
 const route = Router();
 
-route.get("/", catchAsync(getAllTasks));
-route.get("/:id", catchAsync(getTaskById));
+route.get("/",authorizeRoles("admin", "user"),
+checkProjectOrTaskRole(["teamlead", "admin"]),
+catchAsync(getAllTasks));
+route.get("/:id",authorizeRoles("admin", "user"),
+checkProjectOrTaskRole(["teamlead", "admin"]),
+ catchAsync(getTaskById));
 route.post(
-  "/",
+  "/",authorizeRoles("admin", "user"),
+checkProjectOrTaskRole(["teamlead", "admin"]),
 uploadTaskFiles,
   validate(createTaskSchema),        
   catchAsync(createTask)
 );
-route.put("/:id", validate(updateTaskSchema), catchAsync(updateTask));
-route.delete("/:id", catchAsync(deleteTask));
+route.put("/:id",authorizeRoles("admin", "user"),
+checkProjectOrTaskRole(["teamlead", "admin"]),
+ validate(updateTaskSchema), catchAsync(updateTask));
+route.delete("/:id", authorizeRoles("admin", "user"),
+checkProjectOrTaskRole(["teamlead", "admin"]),
+catchAsync(deleteTask));
 export default route;

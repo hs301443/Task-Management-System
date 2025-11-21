@@ -1,32 +1,42 @@
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { TaskModel } from '../../models/schema/Tasks';
 import { ProjectModel } from '../../models/schema/project';
+import { UserProjectModel } from '../../models/schema/User_Project';
 import { BadRequest } from '../../Errors/BadRequest';
 import { NotFound } from '../../Errors/NotFound';
 import { UnauthorizedError } from '../../Errors/unauthorizedError';
 import { SuccessResponse } from '../../utils/response';
-import { Types } from "mongoose";
 
-
+// --------------------------
+// CREATE TASK
+// --------------------------
 export const createTask = async (req: Request, res: Response) => {
   const user = req.user?._id;
   if (!user) throw new UnauthorizedError("Access denied.");
 
-  const {
-    name,
-    description,
-    projectId,
-    priority,
-    end_date,
-    Depatment_id,
-  } = req.body;
+  const { name, description, projectId, priority, end_date, Depatment_id } = req.body;
 
   if (!name) throw new BadRequest("Task name is required");
   if (!projectId) throw new BadRequest("Project ID is required");
 
+  // تأكد أن المشروع موجود
   const project = await ProjectModel.findById(projectId);
   if (!project) throw new NotFound("Project not found");
+
+  // تحقق صلاحية المستخدم في المشروع
+  const checkuseratproject = await UserProjectModel.findOne({ 
+    user_id: user, 
+    project_id: projectId 
+  });
+
+  const role = req.user?.role?.toLowerCase();
+  if (role !== "admin") {
+    const userProjectRole = checkuseratproject?.role?.toLowerCase() ?? '';
+    if (!checkuseratproject || ["member", "membercanapprove"].includes(userProjectRole)) {
+      throw new UnauthorizedError("You can't create a task for this project");
+    }
+  }
 
   const endDateObj = end_date ? new Date(end_date) : undefined;
 
@@ -44,12 +54,11 @@ export const createTask = async (req: Request, res: Response) => {
     Depatment_id: Depatment_id ? new Types.ObjectId(Depatment_id) : undefined,
     file: filePath,
     recorde: recordPath,
-    userId: user,
+    createdBy: user,
   });
 
   await task.save();
 
-  // تحويل المسار المحلي لروابط ديناميكية حسب السيرفر
   const protocol = req.protocol;
   const host = req.get("host");
 
@@ -58,73 +67,88 @@ export const createTask = async (req: Request, res: Response) => {
 
   SuccessResponse(res, {
     message: 'Task created successfully',
-    task: {
-      ...task.toObject(),
-      file: fileUrl,
-      recorde: recordUrl,
-    }
+    task: { ...task.toObject(), file: fileUrl, recorde: recordUrl }
   });
 };
 
-
-// جلب كل المهام
+// --------------------------
+// GET ALL TASKS
+// --------------------------
 export const getAllTasks = async (_req: Request, res: Response) => {
+  const user = _req.user?._id;
+  if(!user) throw new UnauthorizedError('Access denied.');
+
+  const checkuseratproject = await UserProjectModel.findOne({ user_id: user });
+
+  const role = _req.user?.role?.toLowerCase();
+  if (role !== "admin") {
+    const userProjectRole = checkuseratproject?.role?.toLowerCase() ?? '';
+    if (!checkuseratproject || ["member", "membercanapprove"].includes(userProjectRole)) {
+      throw new UnauthorizedError("You can't view tasks for this project");
+    }
+  }
+
   const tasks = await TaskModel.find()
-    .populate('projectId')  // بدل project_id
-    .populate('Depatment_id') // صح
-    .populate('userId', 'name email'); // بدل createdBy
+    .populate('projectId')       // بدل project_id
+    .populate('Depatment_id')    // بدل Depatment_id
+    .populate('createdBy', 'name email'); // بدل createdBy
 
   SuccessResponse(res, { message: 'Tasks fetched successfully', tasks });
 };
 
-// جلب مهمة واحدة
+// --------------------------
+// GET TASK BY ID
+// --------------------------
 export const getTaskById = async (req: Request, res: Response) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequest('Invalid Task ID');
 
   const task = await TaskModel.findById(id)
     .populate('projectId')       // بدل project_id
-    .populate('Depatment_id')    // صح
-    .populate('userId', 'name email'); // بدل createdBy
+    .populate('Depatment_id')    // بدل Depatment_id
+    .populate('createdBy', 'name email'); // بدل createdBy
 
   if (!task) throw new NotFound('Task not found');
 
   SuccessResponse(res, { message: 'Task fetched successfully', task });
 };
 
-// تحديث Task (Admin فقط)
+// --------------------------
+// UPDATE TASK
+// --------------------------
 export const updateTask = async (req: Request, res: Response) => {
   const user = req.user;
-    if(!user) throw new UnauthorizedError('Access denied.');
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequest('Invalid Task ID');
+  if(!user) throw new UnauthorizedError('Access denied.');
 
-    const task = await TaskModel.findById(id);
-    if (!task) throw new NotFound('Task not found');
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequest('Invalid Task ID');
 
-    // تحديث الحقول
-    const updates = req.body;
-    if (req.file) updates.file = req.file.path;       // تحديث الملف
-    if (req.body.recorde) updates.recorde = req.body.recorde; // تحديث التسجيل
+  const task = await TaskModel.findById(id);
+  if (!task) throw new NotFound('Task not found');
 
-    Object.assign(task, updates);
-    await task.save();
+  // تحديث الحقول
+  const updates = req.body;
+  if (req.file) updates.file = req.file.path;
+  if (req.body.recorde) updates.recorde = req.body.recorde;
 
-     SuccessResponse(res,{message:'Task updated successfully', task});
+  Object.assign(task, updates);
+  await task.save();
 
- 
+  SuccessResponse(res, { message:'Task updated successfully', task });
 };
 
-// حذف Task (Admin فقط)
+// --------------------------
+// DELETE TASK
+// --------------------------
 export const deleteTask = async (req: Request, res: Response) => {
   const user = req.user;
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequest('Invalid Task ID');
+  if(!user) throw new UnauthorizedError('Access denied.');
 
-    const task = await TaskModel.findByIdAndDelete(id);
-    if (!task) throw new NotFound('Task not found');
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequest('Invalid Task ID');
 
-     SuccessResponse(res,{message:'Task deleted successfully'});
+  const task = await TaskModel.findByIdAndDelete(id);
+  if (!task) throw new NotFound('Task not found');
 
+  SuccessResponse(res, { message:'Task deleted successfully' });
 };
-

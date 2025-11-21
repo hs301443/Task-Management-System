@@ -24,8 +24,6 @@ route.use(authenticated);
 // /tasks route
 route.use(
   "/tasks",
-  authorizeRoles("admin", "user"),           // السماح بالوصول فقط ل admin و user
-  checkProjectOrTaskRole(["teamlead"]),      // user لازم يكون teamlead، admin يتجاوز
   TaskeRouter
 );
 

@@ -1,5 +1,5 @@
 
-import { Schema, model, Document, Types } from 'mongoose';
+import mongoose, { Schema, model, Document, Types } from 'mongoose';
 import { IUser } from './auth/User';
 import { IProject } from './project';
 
@@ -17,10 +17,7 @@ export interface ITask extends Document {
   status: TaskStatus;
   userId: Types.ObjectId | IUser;
   Depatment_id?: Types.ObjectId;
-  depends_on: {
-    user_id: Types.ObjectId | IUser;
-    is_done: boolean;
-  }[];
+  createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +42,8 @@ const taskSchema = new Schema<ITask>(
     recorde: { type: String, default: '' },
     file: { type: String, default: '' },
     Depatment_id: { type: Schema.Types.ObjectId, ref: 'Department' },
+      createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
   },
   {
     timestamps: true, 

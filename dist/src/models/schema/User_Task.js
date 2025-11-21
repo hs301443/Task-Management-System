@@ -48,8 +48,12 @@ const UserTaskSchema = new mongoose_1.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'in_progress', 'done', 'pending_edit', "in_progress_edit", 'Approved', 'rejected'],
+        enum: ['pending', 'in_progress', 'done', 'pending_edit', "in_progress_edit", 'Approved from Member_can_approve', 'rejected', 'approved'],
         required: true,
+    },
+    is_finished: {
+        type: Boolean,
+        default: false,
     },
     rejection_reasonId: {
         type: mongoose_1.Schema.Types.ObjectId, // سبب الرفض لو الحالة rejected
