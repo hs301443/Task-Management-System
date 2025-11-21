@@ -13,7 +13,6 @@ const plans_1 = __importDefault(require("./plans"));
 const User_Rejection_1 = __importDefault(require("./User_Rejection"));
 const authenticated_1 = require("../../middlewares/authenticated");
 const authorized_1 = require("../../middlewares/authorized");
-// import { authorizeRoleAtProject } from "../../middlewares/authorized";
 const route = (0, express_1.Router)();
 route.use("/auth", index_1.default);
 route.use(authenticated_1.authenticated, (0, authorized_1.authorizeRoles)('user', 'admin'));

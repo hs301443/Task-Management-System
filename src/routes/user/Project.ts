@@ -1,12 +1,19 @@
 import { Router } from "express";
-import {getallProject,getProjectDetailsForUser,addUserToProject,deleteUserFromProject,updateUserRole,getUsersByProject} from '../../controller/user/project'
+import { getallProject, getProjectDetailsForUser } from "../../controller/user/project";
 import { catchAsync } from "../../utils/catchAsync";
-// import { authorizeRoleAtProject } from "../../middlewares/authorized";
+import { authorizeRoles, checkProjectOrTaskRole } from "../../middlewares/authorized";
+
 const route = Router();
-route.get("/:project_id", catchAsync(getProjectDetailsForUser));
+
+// ❌ غلط تعمل authorization هنا
 route.get("/", catchAsync(getallProject));
-route.post("/" ,catchAsync(addUserToProject));
-route.put("/:userId/:project_id",catchAsync(updateUserRole));
-route.delete("/:userId/:project_id", catchAsync(deleteUserFromProject));
-route.get("/users/:project_id", catchAsync(getUsersByProject));
+
+// ✔️ صح — هنا فقط تحتاج role check لأن فيه project_id
+route.get(
+  "/:project_id",
+  authorizeRoles("admin", "user"),
+  checkProjectOrTaskRole(["teamlead", "Member", "Membercanapprove"]),
+  catchAsync(getProjectDetailsForUser)
+);
+
 export default route;

@@ -40,7 +40,7 @@ const UserProjectSchema = new mongoose_1.Schema({
         type: String,
         required: true,
     },
-    userId: {
+    user_id: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "User",
         required: true,
@@ -52,7 +52,7 @@ const UserProjectSchema = new mongoose_1.Schema({
     },
     role: {
         type: String,
-        enum: ["teamlead", "Member", "Viewer"],
+        enum: ["teamlead", "Member", "Membercanapprove"],
         default: "Member",
     },
 }, { timestamps: true });

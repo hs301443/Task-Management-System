@@ -11,12 +11,11 @@ const NotFound_1 = require("../../Errors/NotFound");
 const unauthorizedError_1 = require("../../Errors/unauthorizedError");
 const response_1 = require("../../utils/response");
 const getSubscription = async (req, res) => {
-    const user = req.user;
+    const user = req.user?._id;
     if (!user)
         throw new unauthorizedError_1.UnauthorizedError('Unauthorized');
-    // تأكد من أن الـ id بيتحول لـ ObjectId
-    const userId = new mongoose_1.default.Types.ObjectId(user.id);
-    const data = await subscriptions_1.SubscriptionModel.find({ userId })
+    const userId = new mongoose_1.default.Types.ObjectId(user);
+    const data = await subscriptions_1.SubscriptionModel.find({ userId }) // عدلت هنا
         .populate({ path: 'userId', select: '-password' })
         .populate('planId')
         .populate('PaymentId')
@@ -28,14 +27,14 @@ const getSubscription = async (req, res) => {
 };
 exports.getSubscription = getSubscription;
 const getSubscriptionId = async (req, res) => {
-    const user = req.user;
+    const user = req.user?._id;
     if (!user)
         throw new unauthorizedError_1.UnauthorizedError('Unauthorized');
     const { id } = req.params;
     if (!id)
         throw new BadRequest_1.BadRequest('Please provide subscription id');
-    const userId = new mongoose_1.default.Types.ObjectId(user.id);
-    const data = await subscriptions_1.SubscriptionModel.findOne({ _id: id, userId })
+    const userId = new mongoose_1.default.Types.ObjectId(user);
+    const data = await subscriptions_1.SubscriptionModel.findOne({ _id: id, userId }) // عدلت هنا
         .populate({ path: 'userId', select: '-password' })
         .populate('planId')
         .populate('PaymentId')

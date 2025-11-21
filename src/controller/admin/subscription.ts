@@ -7,14 +7,12 @@ import { UnauthorizedError } from '../../Errors/unauthorizedError';
 import { SuccessResponse } from '../../utils/response';
 
 export const getSubscription = async (req: Request, res: Response) => {
-  const user = req.user;
-
+  const user = req.user?._id;
   if (!user) throw new UnauthorizedError('Unauthorized');
 
-  // تأكد من أن الـ id بيتحول لـ ObjectId
-  const userId = new mongoose.Types.ObjectId(user.id);
+  const userId = new mongoose.Types.ObjectId(user);
 
-  const data = await SubscriptionModel.find({ userId })
+  const data = await SubscriptionModel.find({ userId }) // عدلت هنا
     .populate({ path: 'userId', select: '-password' })
     .populate('planId')
     .populate('PaymentId')
@@ -27,15 +25,15 @@ export const getSubscription = async (req: Request, res: Response) => {
 };
 
 export const getSubscriptionId = async (req: Request, res: Response) => {
-  const user = req.user;
+  const user = req.user?._id;
   if (!user) throw new UnauthorizedError('Unauthorized');
 
   const { id } = req.params;
   if (!id) throw new BadRequest('Please provide subscription id');
 
-  const userId = new mongoose.Types.ObjectId(user.id);
+  const userId = new mongoose.Types.ObjectId(user);
 
-  const data = await SubscriptionModel.findOne({ _id: id, userId })
+  const data = await SubscriptionModel.findOne({ _id: id, userId }) // عدلت هنا
     .populate({ path: 'userId', select: '-password' })
     .populate('planId')
     .populate('PaymentId')

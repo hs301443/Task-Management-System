@@ -12,12 +12,13 @@ import { saveBase64Image } from "../../utils/handleImages";
 import { PaymentMethodModel } from "../../models/schema/payment_methods";
 
 export const createPayment = async (req: Request, res: Response) => {
-  if (!req.user) throw new UnauthorizedError("User is not authenticated");
+  // ✅ التأكد من وجود المستخدم ووجود _id
+  if (!req.user?._id) throw new UnauthorizedError("User is not authenticated");
+  const userId = req.user._id;
 
-  const userId = req.user.id;
   const { plan_id, paymentmethod_id, amount, code, subscriptionType, photo } = req.body;
 
-  // ✅ التحقق من كل الحقول المطلوبة
+  // ✅ التحقق من الحقول المطلوبة
   if (!amount || !paymentmethod_id || !plan_id || !photo) {
     throw new BadRequest("Please provide all the required fields, including photo");
   }
@@ -68,15 +69,15 @@ export const createPayment = async (req: Request, res: Response) => {
   if (finalAmount <= 0) throw new BadRequest("Invalid payment amount after applying promo code");
 
   // ===== حفظ الصورة Base64 =====
-  // TypeScript يعرف الآن أن photo موجود
-const photoUrl = await saveBase64Image(photo, userId !== undefined ? userId : '', req, "payments");
+  const photoUrl = await saveBase64Image(photo, userId.toString(), req, "payments");
+
   // ===== إنشاء الدفع =====
   const payment = await PaymentModel.create({
     amount: finalAmount,
     paymentmethod_id,
     plan_id,
     payment_date: new Date(),
-    userId: userId, // مؤكد موجود
+    userId, // ✅ آمن الآن بدون تحذيرات
     status: "pending",
     code,
     photo: photoUrl,

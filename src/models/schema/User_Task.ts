@@ -1,11 +1,14 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 import {  TaskStatus } from "./Tasks";
+import { IUser } from "./auth/User";
 
 export interface IUserTask extends Document {
   userId: mongoose.Types.ObjectId;
   task_id: mongoose.Types.ObjectId;
   status?:'pending' | 'in_progress' | 'done' | 'Approved' | 'rejected' | 'Pending_edit' | 'in_progress_edit';
-  rejection_reason:mongoose.Types.ObjectId;
+  rejection_reasonId:mongoose.Types.ObjectId;
+User_taskId: mongoose.Types.ObjectId[];
+  role: 'Member' | 'Membercanapprove';  
 }
 
 const UserTaskSchema = new Schema<IUserTask>(
@@ -25,11 +28,20 @@ const UserTaskSchema = new Schema<IUserTask>(
      enum: ['pending', 'in_progress', 'done', 'pending_edit',"in_progress_edit", 'Approved', 'rejected'],
       required: true,
     },
-    rejection_reason: {
+    rejection_reasonId: {
       type: Schema.Types.ObjectId, // سبب الرفض لو الحالة rejected
       ref: "RejectedReson",
+    },
+    role:{
+      type: String,
+      enum: [ 'Member', 'Membercanapprove'],
+      default: 'Member',
+    },
+        User_taskId:[{
+      type: Schema.Types.ObjectId,
+      ref: "User_Task",
+    }]
 
-}
    
   },
   { timestamps: true }

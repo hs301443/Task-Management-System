@@ -5,38 +5,46 @@ import SubscriptionRouter from "./subscription";
 import TaskeRouter from "./Task";
 import DepartmentRouter from "./Department";
 import RejectedResonRouter from "./RejectdReson";
-// import UserProjectRouter from "./User_Project";
+ import UserProjectRouter from "./User_Project";
 // import usertaskRouter from "./User_Task";
 import { authenticated } from "../../middlewares/authenticated";
 import { authorizeRoles } from "../../middlewares/authorized";
-// import { authorizeRoleAtProject } from "../../middlewares/authorized";
+import { checkProjectOrTaskRole } from "../../middlewares/authorized";
 
 const route = Router();
 
 route.use("/auth", authRouter);
 
-route.use(authenticated, authorizeRoles('admin'));
+route.use(authenticated);
 
+
+
+route.use(authenticated);
+
+// /tasks route
+route.use(
+  "/tasks",
+  authorizeRoles("admin", "user"),           // السماح بالوصول فقط ل admin و user
+  checkProjectOrTaskRole(["teamlead"]),      // user لازم يكون teamlead، admin يتجاوز
+  TaskeRouter
+);
+
+// /user-project route
+route.use(
+  "/user-project",      
+  UserProjectRouter
+);
+
+// route.use(
+//   "/user-task",
+//    checkProjectOrTaskRole(['teamlead','Membercanapprove']),
+//   usertaskRouter
+// );
+
+ authorizeRoles('admin')
 route.use("/project", projectRouter);
 route.use("/subscriptions", SubscriptionRouter);
 route.use("/departments", DepartmentRouter);
 route.use("/rejected-reasons", RejectedResonRouter);
-
-
-route.use(
-    "/tasks",
-    TaskeRouter
-);
-// route.use(
-//   "/user-project",
-//   // authorizeRoleAtProject(['adminstrator']),
-//   UserProjectRouter
-// );
-
-// route.use(
-//   "/user-task",
-//   // authorizeRoleAtProject(['adminstrator']),
-//   usertaskRouter
-// );
 
 export default route;

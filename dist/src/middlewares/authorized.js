@@ -1,46 +1,76 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authorizeRoles = void 0;
+exports.checkProjectOrTaskRole = exports.authorizeRoles = void 0;
 const unauthorizedError_1 = require("../Errors/unauthorizedError");
+const User_Project_1 = require("../models/schema/User_Project");
+const User_Task_1 = require("../models/schema/User_Task");
+const mongoose_1 = __importDefault(require("mongoose"));
 // Middleware للتحقق من صلاحيات عامة حسب الدور على النظام
 const authorizeRoles = (...roles) => {
     return (req, res, next) => {
-        if (!req.user?.role || !roles.includes(req.user.role)) {
+        const role = req.user?.role ?? "";
+        if (!role || !roles.includes(role)) {
             throw new unauthorizedError_1.UnauthorizedError(`Access denied for role: ${req.user?.role}`);
         }
         next();
     };
 };
 exports.authorizeRoles = authorizeRoles;
-// // Middleware للتحقق من صلاحيات المستخدم داخل مشروع معين
-// export const authorizeRoleAtProject = (roles: string[]): RequestHandler => {
-//   return async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       // احصل على userId من الـ JWT أو من body
-//       const userId = req.user?._id?.toString() || req.body?.userId;
-//       // احصل على projectId من params أو body
-//       const projectId = req.params?.project_id || req.body?.project_id;
-//       // التحقق من وجود القيم
-//       if (!userId || !projectId) {
-//         throw new UnauthorizedError("User ID or Project ID missing");
-//       }
-//       // السماح للسوبر أدمين بتخطي كل شيء
-//       if (req.user?.role === "SuperAdmin") return next();
-//       // السماح للـ admin على مستوى النظام بتخطي كل المشاريع
-//       if (req.user?.role === "admin") return next();
-//       // التأكد من علاقة المستخدم بالمشروع
-//       const userProject = await UserProjectModel.findOne({
-//         userId: userId,
-//         project_id: projectId,
-//       });
-//       if (!userProject) throw new UnauthorizedError("User is not a member of the project");
-//       // التحقق من الدور داخل المشروع
-//       if (!userProject.role || !roles.includes(userProject.role)) {
-//         throw new UnauthorizedError("You do not have permission for this action");
-//       }
-//       next();
-//     } catch (err) {
-//       next(err);
-//     }
-//   };
-// };
+const checkProjectOrTaskRole = (allowedRoles) => {
+    return async (req, res, next) => {
+        try {
+            const userId = req.user?._id;
+            const role = req.user?.role ?? "";
+            if (!userId)
+                throw new unauthorizedError_1.UnauthorizedError("Unauthorized");
+            // Admin bypass
+            if (role.toLowerCase() === "admin")
+                return next();
+            if (role.toLowerCase() !== "user") {
+                throw new unauthorizedError_1.UnauthorizedError("Only admin or user can access");
+            }
+            let projectRole = null;
+            let taskRole = null;
+            // 🔹 فقط تحقق من projectId لو موجود
+            if (req.params?.project_id && mongoose_1.default.Types.ObjectId.isValid(req.params.project_id)) {
+                const userProject = await User_Project_1.UserProjectModel.findOne({
+                    user_id: new mongoose_1.default.Types.ObjectId(userId),
+                    project_id: new mongoose_1.default.Types.ObjectId(req.params.project_id),
+                });
+                projectRole = userProject?.role || null;
+            }
+            // 🔹 فقط تحقق من taskId لو موجود
+            if (req.params?.taskId && mongoose_1.default.Types.ObjectId.isValid(req.params.taskId)) {
+                const userTask = await User_Task_1.UserTaskModel.findOne({
+                    user_id: new mongoose_1.default.Types.ObjectId(userId),
+                    task_id: new mongoose_1.default.Types.ObjectId(req.params.taskId),
+                });
+                taskRole = userTask?.role || null;
+            }
+            // لو مفيش project ولا task → دخول بدون checks
+            if (!req.params?.project_id && !req.params?.taskId) {
+                return next();
+            }
+            const allowedRolesLower = allowedRoles.map(r => r.toLowerCase());
+            const isAllowed = (projectRole && allowedRolesLower.includes(projectRole.toLowerCase())) ||
+                (taskRole && allowedRolesLower.includes(taskRole.toLowerCase()));
+            console.log(isAllowed);
+            console.log(allowedRolesLower);
+            console.log(projectRole);
+            console.log(taskRole);
+            if (!isAllowed) {
+                throw new unauthorizedError_1.UnauthorizedError(`Access denied. Allowed roles: ${allowedRoles.join(", ")}`);
+            }
+            res.locals.userProjectRole = projectRole;
+            res.locals.userTaskRole = taskRole;
+            next();
+        }
+        catch (err) {
+            next(err);
+        }
+    };
+};
+exports.checkProjectOrTaskRole = checkProjectOrTaskRole;

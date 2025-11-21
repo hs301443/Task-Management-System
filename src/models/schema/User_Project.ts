@@ -1,10 +1,10 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUserProject extends Document {
-  userId: mongoose.Types.ObjectId;
+  user_id: mongoose.Types.ObjectId;
   email: string;
   project_id: mongoose.Types.ObjectId;
-  role?:'administrator' | 'Member' | 'viewer' | 'teamlead';
+  role?:'Membercanapprove' | 'Member' | 'teamlead';
 }
 
 const UserProjectSchema = new Schema<IUserProject>(
@@ -13,7 +13,7 @@ const UserProjectSchema = new Schema<IUserProject>(
       type: String,
       required: true,
     },
-    userId: {
+    user_id: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -25,7 +25,7 @@ const UserProjectSchema = new Schema<IUserProject>(
     },
     role: {
       type: String,
-      enum: ["teamlead", "Member", "Viewer"],
+      enum: ["teamlead", "Member", "Membercanapprove"],
       default: "Member",
     },
   },
