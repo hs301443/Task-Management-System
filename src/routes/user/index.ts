@@ -4,7 +4,7 @@ import paymentRouter  from "./payment";
 import paymentMethodRouter from "./payment_method";
 import ProjectRouter from './Project'
 import plansRouter from "./plans";
-// import TaskeRouter from "./Taske";
+ import TaskeRouter from "./Taske";
 import userRejectionRouter from "./User_Rejection";
 import { authenticated } from "../../middlewares/authenticated";
 import { authorizeRoles } from "../../middlewares/authorized";
@@ -18,6 +18,6 @@ route.use("/plans", plansRouter);
 route.use("/user-rejections", userRejectionRouter);
 route.use("/projects",
     ProjectRouter);
-// route.use("/tasks", 
-//  TaskeRouter);
+route.use("/tasks", 
+ TaskeRouter);
  export default route;

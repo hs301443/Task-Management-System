@@ -106,6 +106,12 @@ export const updateUserTaskStatus = async (req: Request, res: Response) => {
 
     // تحديث حالة المهمة الحالية
     userTask.status = "rejected";
+    const pointsuser = await User.findOne({ _id: userTask.user_id });
+    if (pointsuser) {
+      pointsuser.totalRejectedPoints = pointsuser.totalRejectedPoints + rejection_reasonId.points;
+      await pointsuser.save();
+    }
+
   } else {
     // التحقق من الحالة الحالية قبل السماح بالتغيير
     if (!userTask.status || !allowedStatuses.includes(userTask.status)) {

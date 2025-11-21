@@ -6,6 +6,7 @@ const BadRequest_1 = require("../../Errors/BadRequest");
 const NotFound_1 = require("../../Errors/NotFound");
 const unauthorizedError_1 = require("../../Errors/unauthorizedError");
 const response_1 = require("../../utils/response");
+const User_1 = require("../../models/schema/auth/User");
 const User_Project_1 = require("../../models/schema/User_Project");
 const User_Task_1 = require("../../models/schema/User_Task");
 const User_Rejection_1 = require("../../models/schema/User_Rejection");
@@ -88,6 +89,11 @@ const updateUserTaskStatus = async (req, res) => {
         }
         // تحديث حالة المهمة الحالية
         userTask.status = "rejected";
+        const pointsuser = await User_1.User.findOne({ _id: userTask.user_id });
+        if (pointsuser) {
+            pointsuser.totalRejectedPoints = pointsuser.totalRejectedPoints + rejection_reasonId.points;
+            await pointsuser.save();
+        }
     }
     else {
         // التحقق من الحالة الحالية قبل السماح بالتغيير
